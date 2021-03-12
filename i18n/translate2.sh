@@ -1,0 +1,5 @@
+lrelease world_from_space_plugin_cs_CZ.ts
+lrelease world_from_space_plugin_en_US.ts
+cp world_from_space_plugin_cs_CZ.qm world_from_space_plugin_cs.qm
+cp world_from_space_plugin_en_US.qm world_from_space_plugin_en.qm
+

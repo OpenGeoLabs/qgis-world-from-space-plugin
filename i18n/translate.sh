@@ -1,0 +1,1 @@
+pylupdate5 world_from_space_plugin.pro

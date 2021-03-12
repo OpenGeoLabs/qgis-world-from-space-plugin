@@ -1,1 +1,1 @@
-# qgis-world-from-space-plugin
+# qgis-wps-plugin
