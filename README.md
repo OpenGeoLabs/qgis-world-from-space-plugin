@@ -1,0 +1,1 @@
+# qgis-world-from-space-plugin
