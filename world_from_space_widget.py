@@ -57,7 +57,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.url_processing_request = 'https://api-dynacrop.worldfromspace.cz/api/v2/processing_request'
         self.iface = iface
         self.pluginPath = os.path.dirname(__file__)
-        self.settingsPath = self.pluginPath + "/../../../qgis_patrac_settings"
+        self.settingsPath = self.pluginPath + "/../../../qgis_world_from_space_settings"
         QDockWidget.__init__(self, None)
         self.setupUi(self)
         self.settingsdlg = Ui_Settings(self.pluginPath, self)
@@ -68,14 +68,22 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.requests = []
         self.loadPolygons()
         self.loadIndexesList()
+        self.settings = {}
+        # print("LOADING SETTINGS")
         self.loadSettings()
+        self.polygons_to_register = []
+        self.current_polygon_to_register_id = 0
+        self.requests_to_register = []
+        self.current_request_to_register_id = 0
         # self.pushButtonAbout.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons/cropped-opengeolabs-logo-small.png")))
         # self.pushButtonAbout.clicked.connect(self.showAbout)
 
     def loadSettings(self):
+        # print(self.settingsPath + "/settings.json")
         if os.path.exists(self.settingsPath + "/settings.json"):
             with open(self.settingsPath + "/settings.json") as json_file:
                 self.settings = json.load(json_file)
+                # print(self.settings)
 
     def showSettings(self):
         self.settingsdlg.updateSettings()
@@ -90,9 +98,14 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         # TODO load form JSON
         # TODO Geometry?
         self.polygons = [
-            {"layer": "ABC.shp", "fid": 1, "id": 42173},
-            {"layer": "ABC.shp", "fid": 2, "id": 42174},
-                          ]
+            {"layer": "/home/jencek/Documents/Projekty/GISMentors/WorldFromSpace/data/ABC.gpkg|layername=ABC", "fid": 1, "id": 42173},
+            {"layer": "/home/jencek/Documents/Projekty/GISMentors/WorldFromSpace/data/ABC.gpkg|layername=ABC", "fid": 2, "id": 42222}
+        ]
+
+        # self.polygons = [
+        #     {"layer": "/home/jencek/Documents/Projekty/GISMentors/WorldFromSpace/data/ABC.gpkg|layername=ABC", "fid": 1, "id": 42173}
+        # ]
+
     def polygonIsRegistered(self, polygon):
         # We do not want to register polygon if it is already registered
         for pol in self.polygons:
@@ -103,23 +116,42 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
     def createPolygons(self):
         # TODO do it for more than one polygon
         # Wait always until the previous polygon is responsed + 1 s
-        polygon = {"layer": "ABC.shp", "fid": 1}
-        polid = self.polygonIsRegistered(polygon)
-        if polid is not None:
-            self.listWidgetPolygons.addItem(str(polid))
-            self.pushButtonGetIndex.setEnabled(True)
-        else:
+        # Or just wait 1s between creating polygons
+        self.polygons_to_register = []
+        self.current_polygon_to_register_id = 0
+        selectedLayers = self.iface.layerTreeView().selectedLayers()
+        if len(selectedLayers) != 1:
+            QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select one layer."))
+            return
+        layer_source = selectedLayers[0].source()
+        features = selectedLayers[0].selectedFeatures()
+        if len(features) < 1:
+            QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select at least one feature."))
+            return
+        for feature in features:
+            geom = feature.geometry()
+            geom_wkt = geom.asWkt()
+            polygon = {"layer": layer_source, "fid": feature.id(), "geometry": geom_wkt}
+            polid = self.polygonIsRegistered(polygon)
+            if polid is not None:
+                self.listWidgetPolygons.addItem(str(polid))
+            else:
+                self.polygons_to_register.append(polygon)
+
+        if len(self.polygons_to_register) > 0:
             self.createPolygon()
-            # TODO wait some time then check polygons status
+        else:
             self.pushButtonGetIndex.setEnabled(True)
 
     def createPolygon(self):
         self.createpolygon = Connect()
         self.createpolygon.setType('POST')
         self.createpolygon.setUrl(self.url_polygons)
-        # TODO get from user
+        # "POLYGON((16.609153599499933 49.20045317863389,16.61297306513714 49.199219336662225,16.61524757838177 49.19759286157719,16.616577954053156 49.195910244858794,16.61400303339886 49.195265226606885,16.6094540069096 49.197368515988586,16.608381123303644 49.19863044668781,16.609153599499933 49.20045317863389))"
+        # "POLYGON ((16.56518693093434536 49.22676219888379023, 16.56425126852759178 49.22444226880676865, 16.56539200762623665 49.22282728985813094, 16.56810927379379095 49.22272475151218174, 16.5683784369518996 49.22462171091217442, 16.56854506176405906 49.22571118083784825, 16.56828871589919672 49.22681346805676128, 16.56767348582352284 49.2272620733202686, 16.56518693093434536 49.22676219888379023))"
+        print(self.polygons_to_register[self.current_polygon_to_register_id]["geometry"])
         data = {
-            "geometry": "POLYGON((16.609153599499933 49.20045317863389,16.61297306513714 49.199219336662225,16.61524757838177 49.19759286157719,16.616577954053156 49.195910244858794,16.61400303339886 49.195265226606885,16.6094540069096 49.197368515988586,16.608381123303644 49.19863044668781,16.609153599499933 49.20045317863389))",
+            "geometry": self.polygons_to_register[self.current_polygon_to_register_id]["geometry"],
             "api_key": self.settings['apikey'],
             "max_mean_cloud_cover": 0.1,
             "smi_enabled": False
@@ -131,34 +163,36 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
     def onCreatePolygonResponse(self, response):
         if response.status == 200:
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("INFO"), self.tr("Polygon registered"))
-            print(response.data)
+            # print(response.data)
             response_json = json.loads(response.data)
             self.listWidgetPolygons.addItem(str(response_json["id"]))
         else:
             print("ERROR")
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("ERROR"), self.tr("Polygon can not be registered"))
+        self.current_polygon_to_register_id += 1
+        if len(self.polygons_to_register) > self.current_polygon_to_register_id:
+            self.createPolygon()
+        else:
+            time.sleep(15)
+            self.pushButtonGetIndex.setEnabled(True)
 
     def createProcessingRequests(self):
-        # TODO do it for more than one polygon
-        self.createProcessingRequest()
-        # limit = 10
-        # time_waiting = 0
-        # while time_waiting < limit and len(self.requests) < 1:
-        #     time.sleep(2)
-        #     time_waiting += 1
-        #     print("WAITING: " + str(time_waiting))
-        #     print(self.requests)
-        # if len(self.requests) > 0:
-        #     self.getProcessingRequestInfo(self.requests[0])
+        self.requests_to_register = []
+        self.current_request_to_register_id = 0
+        for index in range(self.listWidgetPolygons.count()):
+            self.requests_to_register.append(self.listWidgetPolygons.item(index).text())
+        if len(self.requests_to_register) > 0:
+            self.createProcessingRequest()
 
     def createProcessingRequest(self):
         self.createprocessingrequest = Connect()
         self.createprocessingrequest.setType('POST')
         self.createprocessingrequest.setUrl(self.url_processing_request)
-        # TODO get from user
+        # TODO get dates from user
+        # 40799
         data = {
             "rendering_type": "field_zonation",
-            "polygon_id": 40799,
+            "polygon_id": int(self.requests_to_register[self.current_request_to_register_id]),
             "date_from": "2020-09-14",
             "date_to": "2020-09-30",
             "layer": self.comboBoxIndexes.currentText(),
@@ -199,8 +233,13 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             data = response.data.read().decode('utf-8')
             response_json = json.loads(data)
             url = "type=xyz&url=" + response_json["result"]["tiles_color"]
-            layer = QgsRasterLayer(url, "request_40799", 'wms')
+            layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"])
+            layer = QgsRasterLayer(url, layer_name, 'wms')
             # TODO check if the layer is valid
             QgsProject.instance().addMapLayer(layer)
         else:
             print("ERROR")
+
+        self.current_request_to_register_id += 1
+        if len(self.requests_to_register) > self.current_request_to_register_id:
+            self.createProcessingRequest()

@@ -67,6 +67,9 @@
      <height>27</height>
     </rect>
    </property>
+   <property name="displayFormat">
+    <string>dd.MM.yyyy</string>
+   </property>
   </widget>
   <widget class="QgsDateTimeEdit" name="mDateTimeEditEnd">
    <property name="geometry">
@@ -76,6 +79,9 @@
      <width>171</width>
      <height>27</height>
     </rect>
+   </property>
+   <property name="displayFormat">
+    <string>dd.MM.yyyy</string>
    </property>
   </widget>
   <widget class="QComboBox" name="comboBoxIndexes">
