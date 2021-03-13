@@ -64,6 +64,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.pushButtonSettings.clicked.connect(self.showSettings)
         self.pushButtonRegisterPolygons.clicked.connect(self.createPolygons)
         self.pushButtonGetIndex.clicked.connect(self.createProcessingRequests)
+        self.pushButtonGetTimeSeries.clicked.connect(self.showGraph)
         self.polygons = []
         self.requests = []
         self.loadPolygons()
@@ -242,3 +243,27 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.current_request_to_register_id += 1
         if len(self.requests_to_register) > self.current_request_to_register_id:
             self.createProcessingRequest()
+
+    def showGraph(self):
+        import matplotlib.pyplot as plt
+
+        # "result": {
+        #     "time_series": {
+        #         "dates": [
+        #             "2020-09-14",
+        #             "2020-09-22",
+        #             "2020-09-24"
+        #         ],
+        #         "values": [
+        #             0.2860300894659764,
+        #             0.28543065172559484,
+        #             0.2525505356341188
+        #         ]
+        #     }
+        # },
+
+        date = [ "2020-09-14", "2020-09-22", "2020-09-24" ]
+        values = [ 0.2860300894659764, 0.28543065172559484, 0.2525505356341188 ]
+
+        plt.plot(date, values)
+        plt.show()

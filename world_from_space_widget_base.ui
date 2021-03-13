@@ -49,7 +49,7 @@
    <property name="geometry">
     <rect>
      <x>190</x>
-     <y>270</y>
+     <y>240</y>
      <width>171</width>
      <height>25</height>
     </rect>
@@ -105,6 +105,22 @@
    </property>
    <property name="text">
     <string>Settings</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButtonGetTimeSeries">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>190</x>
+     <y>280</y>
+     <width>171</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Show time series</string>
    </property>
   </widget>
  </widget>
