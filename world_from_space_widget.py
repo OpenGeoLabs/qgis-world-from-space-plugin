@@ -114,9 +114,6 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         return None
 
     def createPolygons(self):
-        # TODO do it for more than one polygon
-        # Wait always until the previous polygon is responsed + 1 s
-        # Or just wait 1s between creating polygons
         self.polygons_to_register = []
         self.current_polygon_to_register_id = 0
         selectedLayers = self.iface.layerTreeView().selectedLayers()
