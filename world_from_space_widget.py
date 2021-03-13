@@ -190,8 +190,8 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         data = {
             "rendering_type": "field_zonation",
             "polygon_id": int(self.requests_to_register[self.current_request_to_register_id]),
-            "date_from": "2020-09-14",
-            "date_to": "2020-09-30",
+            "date_from": self.mDateTimeEditStart.dateTime().toString("yyyy-MM-dd"),
+            "date_to": self.mDateTimeEditEnd.dateTime().toString("yyyy-MM-dd"),
             "layer": self.comboBoxIndexes.currentText(),
             "number_of_zones": 16,
             "api_key": self.settings['apikey']
@@ -209,6 +209,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             print("RESPONSE")
             print(self.requests)
             time.sleep(2)
+            # TODO when the sleep is not sufficient
             self.getProcessingRequestInfo(response_json["id"])
         else:
             print("ERROR")
@@ -229,11 +230,14 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             print(response.data)
             data = response.data.read().decode('utf-8')
             response_json = json.loads(data)
-            url = "type=xyz&url=" + response_json["result"]["tiles_color"]
-            layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"])
-            layer = QgsRasterLayer(url, layer_name, 'wms')
-            # TODO check if the layer is valid
-            QgsProject.instance().addMapLayer(layer)
+            if  response_json["result"]["tiles_color"] is not None:
+                url = "type=xyz&url=" + response_json["result"]["tiles_color"]
+                layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"])
+                layer = QgsRasterLayer(url, layer_name, 'wms')
+                # TODO check if the layer is valid
+                QgsProject.instance().addMapLayer(layer)
+            else:
+                print("ERROR")
         else:
             print("ERROR")
 
