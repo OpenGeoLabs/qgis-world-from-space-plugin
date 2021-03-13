@@ -185,8 +185,6 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.createprocessingrequest = Connect()
         self.createprocessingrequest.setType('POST')
         self.createprocessingrequest.setUrl(self.url_processing_request)
-        # TODO get dates from user
-        # 40799
         data = {
             "rendering_type": "field_zonation",
             "polygon_id": int(self.requests_to_register[self.current_request_to_register_id]),
@@ -208,7 +206,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             self.requests.append(response_json["id"])
             print("RESPONSE")
             print(self.requests)
-            time.sleep(2)
+            time.sleep(5)
             # TODO when the sleep is not sufficient
             self.getProcessingRequestInfo(response_json["id"])
         else:
