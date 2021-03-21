@@ -64,11 +64,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.pushButtonSettings.clicked.connect(self.showSettings)
         self.pushButtonRegisterPolygons.clicked.connect(self.createPolygons)
         self.pushButtonGetIndex.clicked.connect(self.createProcessingRequests)
-        self.pushButtonGetTimeSeries.clicked.connect(self.showGraph)
         self.polygons = []
         self.requests = []
         self.loadPolygons()
         self.loadIndexesList()
+        self.loadTypesList()
         self.settings = {}
         # print("LOADING SETTINGS")
         self.loadSettings()
@@ -95,17 +95,20 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         for index in indexes:
             self.comboBoxIndexes.addItem(index)
 
+    def loadTypesList(self):
+        types = ["observation", "field_zonation", "time_series"]
+        for type in types:
+            self.comboBoxTypes.addItem(type)
+
     def loadPolygons(self):
         # TODO load form JSON
         # TODO Geometry?
+        path = "/home/jencek/qgis3_profiles/profiles/default/python/plugins/qgis-world-from-space-plugin/data"
         self.polygons = [
-            {"layer": "/home/jencek/Documents/Projekty/GISMentors/WorldFromSpace/data/ABC.gpkg|layername=ABC", "fid": 1, "id": 42173},
-            {"layer": "/home/jencek/Documents/Projekty/GISMentors/WorldFromSpace/data/ABC.gpkg|layername=ABC", "fid": 2, "id": 42222}
+            {"layer": path + "/ABC.gpkg|layername=ABC", "fid": 1, "id": 42982},
+            {"layer": path + "/ABC.gpkg|layername=ABC", "fid": 2, "id": 42981},
+            {"layer": path + "/ABC.gpkg|layername=ABC", "fid": 3, "id": 42987}
         ]
-
-        # self.polygons = [
-        #     {"layer": "/home/jencek/Documents/Projekty/GISMentors/WorldFromSpace/data/ABC.gpkg|layername=ABC", "fid": 1, "id": 42173}
-        # ]
 
     def polygonIsRegistered(self, polygon):
         # We do not want to register polygon if it is already registered
@@ -115,6 +118,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         return None
 
     def createPolygons(self):
+        self.listWidgetPolygons.clear()
         self.polygons_to_register = []
         self.current_polygon_to_register_id = 0
         selectedLayers = self.iface.layerTreeView().selectedLayers()
@@ -183,11 +187,12 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             self.createProcessingRequest()
 
     def createProcessingRequest(self):
+        self.setCursor(Qt.WaitCursor)
         self.createprocessingrequest = Connect()
         self.createprocessingrequest.setType('POST')
         self.createprocessingrequest.setUrl(self.url_processing_request)
         data = {
-            "rendering_type": "field_zonation",
+            "rendering_type": self.comboBoxTypes.currentText(),
             "polygon_id": int(self.requests_to_register[self.current_request_to_register_id]),
             "date_from": self.mDateTimeEditStart.dateTime().toString("yyyy-MM-dd"),
             "date_to": self.mDateTimeEditEnd.dateTime().toString("yyyy-MM-dd"),
@@ -214,8 +219,10 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             print("ERROR")
             self.requests.append(-1)
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("ERROR"), self.tr("Polygon can not be registered"))
+        self.setCursor(Qt.ArrowCursor)
 
     def getProcessingRequestInfo(self, id):
+        self.setCursor(Qt.WaitCursor)
         self.getprocessingrequestinfo = Connect()
         self.getprocessingrequestinfo.setType('GET')
         self.getprocessingrequestinfo.setUrl(self.url_processing_request + "/" + str(id) + "?api_key=" + self.settings['apikey'])
@@ -229,41 +236,51 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             print(response.data)
             data = response.data.read().decode('utf-8')
             response_json = json.loads(data)
-            if  response_json["result"]["tiles_color"] is not None:
-                url = "type=xyz&url=" + response_json["result"]["tiles_color"]
-                layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"])
-                layer = QgsRasterLayer(url, layer_name, 'wms')
-                # TODO check if the layer is valid
-                QgsProject.instance().addMapLayer(layer)
+            if response_json["rendering_type"] == "time_series":
+                self.showGraph(response_json)
             else:
-                print("ERROR")
+                if response_json["result"]["tiles_color"] is not None:
+                    url = "type=xyz&url=" + response_json["result"]["tiles_color"]
+                    layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"]) + "__" + str(response_json["date_from"]) + "_" + str(response_json["date_to"])
+                    layer = QgsRasterLayer(url, layer_name, 'wms')
+                    # TODO check if the layer is valid
+                    QgsProject.instance().addMapLayer(layer)
+                else:
+                    print("ERROR")
+                    QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
+                                            QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
         else:
             print("ERROR")
+            QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
+                                    QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
 
         self.current_request_to_register_id += 1
         if len(self.requests_to_register) > self.current_request_to_register_id:
             self.createProcessingRequest()
+        self.setCursor(Qt.ArrowCursor)
 
-    def showGraph(self):
-        import matplotlib.pyplot as plt
+    def showGraph(self, response_json):
+        if response_json["status"] == "completed" and response_json["result"]["time_series"] is not None:
+            if response_json["result"]["time_series"]["dates"] is not None and len(response_json["result"]["time_series"]["dates"]) > 0:
+                import matplotlib.pyplot as plt
 
-        # "result": {
-        #     "time_series": {
-        #         "dates": [
-        #             "2020-09-14",
-        #             "2020-09-22",
-        #             "2020-09-24"
-        #         ],
-        #         "values": [
-        #             0.2860300894659764,
-        #             0.28543065172559484,
-        #             0.2525505356341188
-        #         ]
-        #     }
-        # },
+                # "result": {
+                #     "time_series": {
+                #         "dates": [
+                #             "2020-09-14",
+                #             "2020-09-22",
+                #             "2020-09-24"
+                #         ],
+                #         "values": [
+                #             0.2860300894659764,
+                #             0.28543065172559484,
+                #             0.2525505356341188
+                #         ]
+                #     }
+                # },
 
-        date = [ "2020-09-14", "2020-09-22", "2020-09-24" ]
-        values = [ 0.2860300894659764, 0.28543065172559484, 0.2525505356341188 ]
+                # date = [ "2020-09-14", "2020-09-22", "2020-09-24" ]
+                # values = [ 0.2860300894659764, 0.28543065172559484, 0.2525505356341188 ]
 
-        plt.plot(date, values)
-        plt.show()
+                plt.plot(response_json["result"]["time_series"]["dates"], response_json["result"]["time_series"]["values"])
+                plt.show()

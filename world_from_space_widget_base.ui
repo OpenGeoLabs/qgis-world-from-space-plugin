@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>393</width>
-    <height>322</height>
+    <width>424</width>
+    <height>311</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -24,7 +24,7 @@
     <rect>
      <x>20</x>
      <y>40</y>
-     <width>141</width>
+     <width>171</width>
      <height>25</height>
     </rect>
    </property>
@@ -36,9 +36,9 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>81</y>
-     <width>141</width>
-     <height>221</height>
+     <y>101</y>
+     <width>171</width>
+     <height>191</height>
     </rect>
    </property>
   </widget>
@@ -48,21 +48,21 @@
    </property>
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>240</y>
+     <x>220</x>
+     <y>260</y>
      <width>171</width>
      <height>25</height>
     </rect>
    </property>
    <property name="text">
-    <string>Get index</string>
+    <string>Get data</string>
    </property>
   </widget>
   <widget class="QgsDateTimeEdit" name="mDateTimeEditStart">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>120</y>
+     <x>220</x>
+     <y>100</y>
      <width>171</width>
      <height>27</height>
     </rect>
@@ -74,8 +74,8 @@
   <widget class="QgsDateTimeEdit" name="mDateTimeEditEnd">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>160</y>
+     <x>220</x>
+     <y>140</y>
      <width>171</width>
      <height>27</height>
     </rect>
@@ -87,8 +87,8 @@
   <widget class="QComboBox" name="comboBoxIndexes">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>200</y>
+     <x>220</x>
+     <y>180</y>
      <width>171</width>
      <height>25</height>
     </rect>
@@ -97,7 +97,7 @@
   <widget class="QPushButton" name="pushButtonSettings">
    <property name="geometry">
     <rect>
-     <x>280</x>
+     <x>310</x>
      <y>40</y>
      <width>80</width>
      <height>25</height>
@@ -107,20 +107,14 @@
     <string>Settings</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButtonGetTimeSeries">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
+  <widget class="QComboBox" name="comboBoxTypes">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>280</y>
+     <x>220</x>
+     <y>220</y>
      <width>171</width>
      <height>25</height>
     </rect>
-   </property>
-   <property name="text">
-    <string>Show time series</string>
    </property>
   </widget>
  </widget>
