@@ -3,11 +3,6 @@ import urllib.request, urllib.error, urllib.parse
 import socket, os
 import requests, json
 
-class ResponseOutput:
-    def __init__(self, filepath, minetype):
-        self.filepath = filepath
-        self.minetype = minetype
-
 class Response():
     status = 200
     data = []

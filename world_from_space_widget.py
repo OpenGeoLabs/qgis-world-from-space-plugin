@@ -102,7 +102,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
 
     def loadPolygons(self):
         # TODO load form JSON
-        # TODO Geometry?
+        # TODO Geometry? - GPKG - kontrolovat jen geometrii ne fid
         path = "/home/jencek/qgis3_profiles/profiles/default/python/plugins/qgis-world-from-space-plugin/data"
         self.polygons = [
             {"layer": path + "/ABC.gpkg|layername=ABC", "fid": 1, "id": 42982},
@@ -212,7 +212,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             self.requests.append(response_json["id"])
             print("RESPONSE")
             print(self.requests)
-            time.sleep(5)
+            time.sleep(1)
             # TODO when the sleep is not sufficient
             self.getProcessingRequestInfo(response_json["id"])
         else:
