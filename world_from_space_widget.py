@@ -163,7 +163,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.createpolygon.start()
 
     def onCreatePolygonResponse(self, response):
-        if response.status == 200:
+        if response.status in (200, 201):
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("INFO"), self.tr("Polygon registered"))
             # print(response.data)
             response_json = json.loads(response.data)
@@ -205,7 +205,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.createprocessingrequest.start()
 
     def onCreateProcessingRequestResponse(self, response):
-        if response.status == 200:
+        if response.status in (200, 201):
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("INFO"), self.tr("Polygon registered"))
             # print(response.data)
             response_json = json.loads(response.data)
@@ -230,7 +230,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.getprocessingrequestinfo.start()
 
     def onGetProcessingRequestInfoResponse(self, response):
-        if response.status == 200:
+        if response.status in (200, 201):
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("INFO"), self.tr("Polygon registered"))
             print("REQUEST INFO:")
             print(response.data)
