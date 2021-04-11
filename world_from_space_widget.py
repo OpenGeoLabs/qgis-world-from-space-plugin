@@ -101,21 +101,28 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             self.comboBoxTypes.addItem(type)
 
     def loadPolygons(self):
-        # TODO load form JSON
-        # TODO Geometry? - GPKG - kontrolovat jen geometrii ne fid
-        path = "/home/jencek/qgis3_profiles/profiles/default/python/plugins/qgis-world-from-space-plugin/data"
-        self.polygons = [
-            {"layer": path + "/ABC.gpkg|layername=ABC", "fid": 1, "id": 42982},
-            {"layer": path + "/ABC.gpkg|layername=ABC", "fid": 2, "id": 42981},
-            {"layer": path + "/ABC.gpkg|layername=ABC", "fid": 3, "id": 42987}
-        ]
+        path = self.settingsPath + "/registered_polygons.gpkg|layername=registered_polygons"
+        # print(path)
+        self.registered_polygons = QgsVectorLayer(path, "Registered polygons", "ogr")
 
     def polygonIsRegistered(self, polygon):
-        # We do not want to register polygon if it is already registered
-        for pol in self.polygons:
-            if pol['layer'] == polygon['layer'] and pol['fid'] == polygon['fid']:
-                return pol['id']
-        return None
+        if self.registered_polygons.isValid():
+            # print("GETTING REGISTERED")
+            provider = self.registered_polygons.dataProvider()
+            features = provider.getFeatures()
+            # print(features)
+            for feature in features:
+                # print("COMPARE:")
+                registered_geometry = feature.geometry()
+                # print(registered_geometry)
+                # print(polygon)
+                if registered_geometry.equals(polygon):
+                    # print("SAME")
+                    return feature['polygon_id']
+            return None
+        else:
+            QgsMessageLog.logMessage(self.tr("File for storing registered polygons is not available"), "DynaCrop")
+            return None
 
     def createPolygons(self):
         self.listWidgetPolygons.clear()
@@ -134,7 +141,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             geom = feature.geometry()
             geom_wkt = geom.asWkt()
             polygon = {"layer": layer_source, "fid": feature.id(), "geometry": geom_wkt}
-            polid = self.polygonIsRegistered(polygon)
+            polid = self.polygonIsRegistered(geom)
             if polid is not None:
                 self.listWidgetPolygons.addItem(str(polid))
             else:
@@ -168,6 +175,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             # print(response.data)
             response_json = json.loads(response.data)
             self.listWidgetPolygons.addItem(str(response_json["id"]))
+            self.savePolygon(self.current_polygon_to_register_id, response_json["id"])
         else:
             print("ERROR")
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("ERROR"), self.tr("Polygon can not be registered"))
@@ -177,6 +185,19 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         else:
             time.sleep(15)
             self.pushButtonGetIndex.setEnabled(True)
+
+    def savePolygon(self, pos, id):
+        if not self.registered_polygons.isValid():
+            QgsMessageLog.logMessage(self.tr("File for storing registered polygons is not available"), "DynaCrop")
+        else:
+            next_fid = self.registered_polygons.featureCount()
+            self.registered_polygons.startEditing()
+            fet = QgsFeature()
+            fet.setGeometry(QgsGeometry.fromWkt(self.polygons_to_register[pos]["geometry"]))
+            fet.setAttributes([next_fid, id])
+            self.registered_polygons.addFeature(fet)
+            # provider.addFeatures([fet])
+            self.registered_polygons.commitChanges()
 
     def createProcessingRequests(self):
         self.requests_to_register = []
@@ -240,9 +261,14 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
                 self.showGraph(response_json)
             else:
                 if response_json["result"]["tiles_color"] is not None:
-                    url = "type=xyz&url=" + response_json["result"]["tiles_color"]
+                    # url = "type=xyz&url=" + response_json["result"]["tiles_color"]
                     layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"]) + "__" + str(response_json["date_from"]) + "_" + str(response_json["date_to"])
-                    layer = QgsRasterLayer(url, layer_name, 'wms')
+                    # layer = QgsRasterLayer(url, layer_name, 'wms')
+                    url = "/vsicurl/" + response_json["result"]["raw"]
+                    layer = QgsRasterLayer(url, layer_name, 'gdal')
+                    provider = layer.dataProvider()
+                    provider.setNoDataValue(1, -998)
+                    # TODO set min max according to the values except nodata
                     # TODO check if the layer is valid
                     QgsProject.instance().addMapLayer(layer)
                 else:

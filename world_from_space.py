@@ -30,7 +30,7 @@ from qgis.gui import *
 # Import the code for the dialog
 from .world_from_space_widget import WorldFromSpaceWidget
 import os
-
+from shutil import copy
 
 class WorldFromSpace:
     """QGIS Plugin Implementation."""
@@ -176,6 +176,8 @@ class WorldFromSpace:
         profilePath = self.pluginPath + "/../../../"
         if not os.path.isdir(profilePath + "qgis_world_from_space_settings"):
             os.mkdir(profilePath + "qgis_world_from_space_settings")
+        if not os.path.isfile(profilePath + "qgis_world_from_space_settings/registered_polygons.gpkg"):
+            copy(self.pluginPath + "/data/registered_polygons.gpkg", profilePath + "qgis_world_from_space_settings/registered_polygons.gpkg")
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
