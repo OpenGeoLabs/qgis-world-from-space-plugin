@@ -289,6 +289,8 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         if response_json["status"] == "completed" and response_json["result"]["time_series"] is not None:
             if response_json["result"]["time_series"]["dates"] is not None and len(response_json["result"]["time_series"]["dates"]) > 0:
                 import matplotlib.pyplot as plt
+                import matplotlib.dates as mdates
+                import datetime as dt
 
                 # "result": {
                 #     "time_series": {
@@ -307,9 +309,13 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
 
                 # date = [ "2020-09-14", "2020-09-22", "2020-09-24" ]
                 # values = [ 0.2860300894659764, 0.28543065172559484, 0.2525505356341188 ]
-
+                dates_list = [dt.datetime.strptime(date, '%Y-%m-%d').date() for date in response_json["result"]["time_series"]["dates"]]
                 plt.xticks(rotation=90)
-                plt.plot(response_json["result"]["time_series"]["dates"], response_json["result"]["time_series"]["values"])
+                plt.title(response_json["layer"])
+                plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+                plt.gca().xaxis.set_major_locator(mdates.DayLocator())
+                plt.plot(dates_list,response_json["result"]["time_series"]["values"],marker='o',label=response_json["polygon"]["id"])
+                plt.legend(loc="upper left")
                 # print(str(len(self.requests_to_register)))
                 # print(str(self.current_request_to_register_id))
                 if len(self.requests_to_register) == (self.current_request_to_register_id + 1):
