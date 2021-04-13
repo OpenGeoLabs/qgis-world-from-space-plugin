@@ -273,7 +273,18 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
                     layer = QgsRasterLayer(url, layer_name, 'gdal')
                     provider = layer.dataProvider()
                     provider.setNoDataValue(1, -999)
-                    # TODO set min max according to the values except nodata
+                    provider.setUserNoDataValue(1, [QgsRasterRange(-998,-998)])
+                    provider.histogram(1)
+                    extent = layer.extent()
+                    ver = provider.hasStatistics(1, QgsRasterBandStats.All)
+                    stats = provider.bandStatistics(1, QgsRasterBandStats.All,extent, 0)
+                    renderer = QgsSingleBandGrayRenderer(layer.dataProvider(), 1)
+                    ce = QgsContrastEnhancement(layer.dataProvider().dataType(0))
+                    ce.setContrastEnhancementAlgorithm(QgsContrastEnhancement.StretchToMinimumMaximum)
+                    ce.setMinimumValue(stats.minimumValue)
+                    ce.setMaximumValue(stats.maximumValue)
+                    renderer.setContrastEnhancement(ce)
+                    layer.setRenderer(renderer)
                     # TODO check if the layer is valid
                     QgsProject.instance().addMapLayer(layer)
                 else:
