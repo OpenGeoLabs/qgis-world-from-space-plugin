@@ -61,9 +61,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         QDockWidget.__init__(self, None)
         self.setupUi(self)
         self.settingsdlg = Ui_Settings(self.pluginPath, self)
+        self.pushButtonSettings.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons/settings.png")))
         self.pushButtonSettings.clicked.connect(self.showSettings)
-        self.pushButtonRegisterPolygons.clicked.connect(self.createPolygons)
-        self.pushButtonGetIndex.clicked.connect(self.createProcessingRequests)
+        self.pushButtonSave.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons/save.png")))
+        self.pushButtonSave.clicked.connect(self.saveRasters)
+        self.pushButtonGetIndex.clicked.connect(self.createPolygons)
         self.polygons = []
         self.requests = []
         self.loadPolygons()
@@ -72,12 +74,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.settings = {}
         # print("LOADING SETTINGS")
         self.loadSettings()
+        self.polygons_to_process = []
         self.polygons_to_register = []
         self.current_polygon_to_register_id = 0
         self.requests_to_register = []
         self.current_request_to_register_id = 0
-        # self.pushButtonAbout.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons/cropped-opengeolabs-logo-small.png")))
-        # self.pushButtonAbout.clicked.connect(self.showAbout)
 
     def loadSettings(self):
         # print(self.settingsPath + "/settings.json")
@@ -125,12 +126,15 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             return None
 
     def createPolygons(self):
-        self.listWidgetPolygons.clear()
+        self.polygons_to_process = []
         self.polygons_to_register = []
         self.current_polygon_to_register_id = 0
         selectedLayers = self.iface.layerTreeView().selectedLayers()
         if len(selectedLayers) != 1:
             QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select one layer."))
+            return
+        if selectedLayers[0].type() != QgsMapLayer.VectorLayer:
+            QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select vector layer."))
             return
         layer_source = selectedLayers[0].source()
         features = selectedLayers[0].selectedFeatures()
@@ -143,14 +147,14 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             polygon = {"layer": layer_source, "fid": feature.id(), "geometry": geom_wkt}
             polid = self.polygonIsRegistered(geom)
             if polid is not None:
-                self.listWidgetPolygons.addItem(str(polid))
+                self.polygons_to_process.append(str(polid))
             else:
                 self.polygons_to_register.append(polygon)
 
         if len(self.polygons_to_register) > 0:
             self.createPolygon()
         else:
-            self.pushButtonGetIndex.setEnabled(True)
+            self.createProcessingRequests()
 
     def createPolygon(self):
         self.createpolygon = Connect()
@@ -174,7 +178,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("INFO"), self.tr("Polygon registered"))
             # print(response.data)
             response_json = json.loads(response.data)
-            self.listWidgetPolygons.addItem(str(response_json["id"]))
+            self.polygons_to_process.append(str(response_json["id"]))
             self.savePolygon(self.current_polygon_to_register_id, response_json["id"])
         else:
             print("ERROR")
@@ -184,7 +188,8 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             self.createPolygon()
         else:
             time.sleep(15)
-            self.pushButtonGetIndex.setEnabled(True)
+            self.createProcessingRequests()
+            # self.pushButtonGetIndex.setEnabled(True)
 
     def savePolygon(self, pos, id):
         if not self.registered_polygons.isValid():
@@ -202,8 +207,8 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
     def createProcessingRequests(self):
         self.requests_to_register = []
         self.current_request_to_register_id = 0
-        for index in range(self.listWidgetPolygons.count()):
-            self.requests_to_register.append(self.listWidgetPolygons.item(index).text())
+        for index in range(len(self.polygons_to_process)):
+            self.requests_to_register.append(self.polygons_to_process[index])
         if len(self.requests_to_register) > 0:
             self.createProcessingRequest()
 
@@ -267,7 +272,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
                     url = "/vsicurl/" + response_json["result"]["raw"]
                     layer = QgsRasterLayer(url, layer_name, 'gdal')
                     provider = layer.dataProvider()
-                    provider.setNoDataValue(1, -998)
+                    provider.setNoDataValue(1, -999)
                     # TODO set min max according to the values except nodata
                     # TODO check if the layer is valid
                     QgsProject.instance().addMapLayer(layer)
@@ -322,3 +327,42 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
                     mng = plt.get_current_fig_manager()
                     mng.window.showMaximized()
                     plt.show()
+
+    def saveRasters(self):
+        selectedLayers = self.iface.layerTreeView().selectedLayers()
+        if len(selectedLayers) < 1:
+            QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select at least one layer."))
+            return
+        for layer in selectedLayers:
+            if layer.type() != QgsMapLayer.RasterLayer:
+                QgsMessageLog.logMessage(self.tr("Selected layer is not raster. Skipping"), "DynaCrop")
+            else:
+                self.saveRaster(layer)
+                if layer.isValid():
+                    url = os.path.join(self.settings['layers_directory'], layer.name() + ".tif")
+                    layer2 = QgsRasterLayer(url, layer.name(), 'gdal')
+                    if layer2.isValid():
+                        QgsProject.instance().addMapLayer(layer2)
+                        QgsProject.instance().removeMapLayer(layer)
+
+        QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
+                                QApplication.translate("World from Space", "Selected raster layers were saved localy.", None))
+
+    def saveRaster(self, layer):
+        extent = layer.extent()
+        width, height = layer.width(), layer.height()
+        renderer = layer.renderer()
+        provider = layer.dataProvider()
+        # crs = layer.crs().toWkt()
+        pipe = QgsRasterPipe()
+        pipe.set(provider.clone())
+        pipe.set(renderer.clone())
+        # pa_name, file_name = os.path.split(fileName)
+        # save_raster = os.path.join(save_path, file_name)
+        p = os.path.join(self.settings['layers_directory'], layer.name() + ".tif")
+        file_writer = QgsRasterFileWriter(p)
+        file_writer.writeRaster(pipe,
+                            width,
+                            height,
+                            extent,
+                            layer.crs())

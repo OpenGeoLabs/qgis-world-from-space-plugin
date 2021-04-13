@@ -58,8 +58,12 @@ class Ui_Settings(QtWidgets.QDialog, FORM_CLASS):
             with open(self.settingsPath + "/settings.json") as json_file:
                 self.settings = json.load(json_file)
                 self.lineEditAPIKey.setText(self.settings['apikey'])
+                self.lineEditLayersDirectory.setText(self.settings['layers_directory'])
+        else:
+            self.lineEditLayersDirectory.setText(self.pluginPath + "/data")
 
     def writeSettings(self):
         self.settings['apikey'] = self.lineEditAPIKey.text()
+        self.settings['layers_directory'] = self.lineEditLayersDirectory.text()
         with open(self.settingsPath + "/settings.json", 'w') as outfile:
             json.dump(self.settings, outfile)
