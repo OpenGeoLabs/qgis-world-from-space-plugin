@@ -191,5 +191,5 @@ class WorldFromSpace:
     def run(self):
         """Run method that performs all the real work"""
         self.dockWidget = WorldFromSpaceWidget(self.iface, None)
-        self.dockWidget.setMinimumSize(QSize(227, 311))
+        self.dockWidget.setMinimumSize(QSize(371, 317))
         self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockWidget)
