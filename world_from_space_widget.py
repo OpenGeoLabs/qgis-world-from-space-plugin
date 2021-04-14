@@ -80,6 +80,14 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.requests_to_register = []
         self.current_request_to_register_id = 0
 
+    def get_form_of_output(self, index):
+        if index == 0:
+            return "observation"
+        if index == 1:
+            return "field_zonation"
+        if index == 2:
+            return "time_series"
+
     def loadSettings(self):
         # print(self.settingsPath + "/settings.json")
         if os.path.exists(self.settingsPath + "/settings.json"):
@@ -220,7 +228,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.createprocessingrequest.setType('POST')
         self.createprocessingrequest.setUrl(self.url_processing_request)
         data = {
-            "rendering_type": self.comboBoxTypes.currentText(),
+            "rendering_type": self.get_form_of_output(self.comboBoxTypes.currentIndex()),
             "polygon_id": int(self.requests_to_register[self.current_request_to_register_id]),
             "date_from": self.mDateTimeEditStart.dateTime().toString("yyyy-MM-dd"),
             "date_to": self.mDateTimeEditEnd.dateTime().toString("yyyy-MM-dd"),
