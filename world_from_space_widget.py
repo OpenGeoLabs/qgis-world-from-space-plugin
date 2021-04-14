@@ -162,7 +162,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.createpolygon.setUrl(self.url_polygons)
         # "POLYGON((16.609153599499933 49.20045317863389,16.61297306513714 49.199219336662225,16.61524757838177 49.19759286157719,16.616577954053156 49.195910244858794,16.61400303339886 49.195265226606885,16.6094540069096 49.197368515988586,16.608381123303644 49.19863044668781,16.609153599499933 49.20045317863389))"
         # "POLYGON ((16.56518693093434536 49.22676219888379023, 16.56425126852759178 49.22444226880676865, 16.56539200762623665 49.22282728985813094, 16.56810927379379095 49.22272475151218174, 16.5683784369518996 49.22462171091217442, 16.56854506176405906 49.22571118083784825, 16.56828871589919672 49.22681346805676128, 16.56767348582352284 49.2272620733202686, 16.56518693093434536 49.22676219888379023))"
-        print(self.polygons_to_register[self.current_polygon_to_register_id]["geometry"])
+        # print(self.polygons_to_register[self.current_polygon_to_register_id]["geometry"])
         data = {
             "geometry": self.polygons_to_register[self.current_polygon_to_register_id]["geometry"],
             "api_key": self.settings['apikey'],
@@ -181,7 +181,9 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             self.polygons_to_process.append(str(response_json["id"]))
             self.savePolygon(self.current_polygon_to_register_id, response_json["id"])
         else:
-            print("ERROR")
+            # print("ERROR")
+            QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
+                                    QApplication.translate("World from Space", "Can not register selected polygons. Check if the polygon in single geometry.", None))
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("ERROR"), self.tr("Polygon can not be registered"))
         self.current_polygon_to_register_id += 1
         if len(self.polygons_to_register) > self.current_polygon_to_register_id:
@@ -236,13 +238,15 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             # print(response.data)
             response_json = json.loads(response.data)
             self.requests.append(response_json["id"])
-            print("RESPONSE")
-            print(self.requests)
+            # print("RESPONSE")
+            # print(self.requests)
             time.sleep(1)
             # TODO when the sleep is not sufficient
             self.getProcessingRequestInfo(response_json["id"])
         else:
-            print("ERROR")
+            # print("ERROR")
+            QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
+                                    QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
             self.requests.append(-1)
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("ERROR"), self.tr("Polygon can not be registered"))
         self.setCursor(Qt.ArrowCursor)
@@ -258,8 +262,8 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
     def onGetProcessingRequestInfoResponse(self, response):
         if response.status in (200, 201):
             # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("INFO"), self.tr("Polygon registered"))
-            print("REQUEST INFO:")
-            print(response.data)
+            # print("REQUEST INFO:")
+            # print(response.data)
             data = response.data.read().decode('utf-8')
             response_json = json.loads(data)
             if response_json["rendering_type"] == "Time series":
@@ -288,11 +292,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
                     # TODO check if the layer is valid
                     QgsProject.instance().addMapLayer(layer)
                 else:
-                    print("ERROR")
+                    # print("ERROR")
                     QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
                                             QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
         else:
-            print("ERROR")
+            # print("ERROR")
             QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
                                     QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
 
