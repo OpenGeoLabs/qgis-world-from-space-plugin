@@ -274,7 +274,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             # print(response.data)
             data = response.data.read().decode('utf-8')
             response_json = json.loads(data)
-            if response_json["rendering_type"] == "Time series":
+            if response_json["rendering_type"] == "time_series":
                 self.showGraph(response_json)
             else:
                 if response_json["result"]["tiles_color"] is not None:
@@ -314,14 +314,14 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.setCursor(Qt.ArrowCursor)
 
     def showGraph(self, response_json):
-        if response_json["status"] == "completed" and response_json["result"]["Time series"] is not None:
-            if response_json["result"]["Time series"]["dates"] is not None and len(response_json["result"]["Time series"]["dates"]) > 0:
+        if response_json["status"] == "completed" and response_json["result"]["time_series"] is not None:
+            if response_json["result"]["time_series"]["dates"] is not None and len(response_json["result"]["time_series"]["dates"]) > 0:
                 import matplotlib.pyplot as plt
                 import matplotlib.dates as mdates
                 import datetime as dt
 
                 # "result": {
-                #     "Time series": {
+                #     "time_series": {
                 #         "dates": [
                 #             "2020-09-14",
                 #             "2020-09-22",
@@ -337,12 +337,12 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
 
                 # date = [ "2020-09-14", "2020-09-22", "2020-09-24" ]
                 # values = [ 0.2860300894659764, 0.28543065172559484, 0.2525505356341188 ]
-                dates_list = [dt.datetime.strptime(date, '%Y-%m-%d').date() for date in response_json["result"]["Time series"]["dates"]]
+                dates_list = [dt.datetime.strptime(date, '%Y-%m-%d').date() for date in response_json["result"]["time_series"]["dates"]]
                 plt.xticks(rotation=90)
                 plt.title(response_json["layer"])
                 plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
                 plt.gca().xaxis.set_major_locator(mdates.DayLocator())
-                plt.plot(dates_list,response_json["result"]["Time series"]["values"],marker='o',label=response_json["polygon"]["id"])
+                plt.plot(dates_list,response_json["result"]["time_series"]["values"],marker='o',label=response_json["polygon"]["id"])
                 plt.legend(loc="upper left")
                 # print(str(len(self.requests_to_register)))
                 # print(str(self.current_request_to_register_id))
