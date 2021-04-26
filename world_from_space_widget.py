@@ -89,11 +89,9 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             return "time_series"
 
     def loadSettings(self):
-        # print(self.settingsPath + "/settings.json")
         if os.path.exists(self.settingsPath + "/settings.json"):
             with open(self.settingsPath + "/settings.json") as json_file:
                 self.settings = json.load(json_file)
-                # print(self.settings)
 
     def showSettings(self):
         self.settingsdlg.updateSettings()
@@ -248,7 +246,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             self.requests.append(response_json["id"])
             # print("RESPONSE")
             # print(self.requests)
-            time.sleep(1)
+            time.sleep(2)
             # TODO when the sleep is not sufficient
             self.getProcessingRequestInfo(response_json["id"])
         else:

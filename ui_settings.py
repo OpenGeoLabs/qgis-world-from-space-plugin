@@ -45,6 +45,7 @@ class Ui_Settings(QtWidgets.QDialog, FORM_CLASS):
         super(Ui_Settings, self).__init__(parent)
         self.parent = parent
         self.setupUi(self)
+        self.pushButtonBrowse.clicked.connect(self.browseDir)
         self.pluginPath = pluginPath
         self.settingsPath = pluginPath + "/../../../qgis_world_from_space_settings"
         self.settings = {}
@@ -52,6 +53,22 @@ class Ui_Settings(QtWidgets.QDialog, FORM_CLASS):
     def accept(self):
         self.writeSettings()
         self.close()
+
+    def browseDir(self):
+        """
+        Opens Directory browse dialog.
+        Sets the selected path to the self.lineEditLayersDirectory
+        :return: None
+        """
+        path = self.pluginPath
+        if self.lineEditLayersDirectory.text() != "" and os.path.exists(self.lineEditLayersDirectory.text()):
+            path = self.lineEditLayersDirectory.text()
+        destDir = QFileDialog.getExistingDirectory(None,
+                                                   'Open working directory',
+                                                   path,
+                                                   QFileDialog.ShowDirsOnly)
+        if destDir is not None:
+            self.lineEditLayersDirectory.setText(destDir)
 
     def updateSettings(self):
         if os.path.exists(self.settingsPath + "/settings.json"):
@@ -67,3 +84,4 @@ class Ui_Settings(QtWidgets.QDialog, FORM_CLASS):
         self.settings['layers_directory'] = self.lineEditLayersDirectory.text()
         with open(self.settingsPath + "/settings.json", 'w') as outfile:
             json.dump(self.settings, outfile)
+        self.parent.loadSettings()
