@@ -154,6 +154,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         return geometries
 
     def createPolygons(self):
+        self.progressBar.setValue(0)
         self.polygons_to_process = []
         self.polygons_to_register = []
         self.current_polygon_to_register_id = 0
@@ -169,6 +170,8 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         if len(features) < 1:
             QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select at least one feature."))
             return
+        self.progressBar.setValue(5)
+        self.pushButtonGetIndex.setEnabled(False)
         for feature in features:
             geom = feature.geometry()
             geometries = self.getSelectedParts(geom)
@@ -184,6 +187,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         if len(self.polygons_to_register) > 0:
             self.createPolygon()
         else:
+            self.progressBar.setValue(10)
             self.createProcessingRequests()
 
     def createPolygon(self):
@@ -245,7 +249,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             self.createProcessingRequest()
 
     def createProcessingRequest(self):
-        self.setCursor(Qt.WaitCursor)
+        # self.setCursor(Qt.WaitCursor)
         self.createprocessingrequest = Connect()
         self.createprocessingrequest.setType('POST')
         self.createprocessingrequest.setUrl(self.url_processing_request)
@@ -331,9 +335,14 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
                                     QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
 
         self.current_request_to_register_id += 1
+        percent_for_one_process = int(90 / len(self.requests_to_register))
+        self.progressBar.setValue(10 + (percent_for_one_process * self.current_request_to_register_id))
         if len(self.requests_to_register) > self.current_request_to_register_id:
             self.createProcessingRequest()
-        self.setCursor(Qt.ArrowCursor)
+        else:
+            self.progressBar.setValue(100)
+            self.pushButtonGetIndex.setEnabled(True)
+        # self.setCursor(Qt.ArrowCursor)
 
     def showGraph(self, response_json):
         if response_json["status"] == "completed" and response_json["result"]["time_series"] is not None:
