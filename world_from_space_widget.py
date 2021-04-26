@@ -131,6 +131,28 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             QgsMessageLog.logMessage(self.tr("File for storing registered polygons is not available"), "DynaCrop")
             return None
 
+    def transformToWgs84(self, geom):
+        source_crs = self.iface.layerTreeView().selectedLayers()[0].crs().authid()
+        if source_crs != "EPSG:4326":
+            crs_src = QgsCoordinateReferenceSystem(source_crs)
+            crs_dest = QgsCoordinateReferenceSystem(4326)
+            xform = QgsCoordinateTransform(crs_src, crs_dest, QgsProject.instance())
+            return xform.transform(geom)
+        else:
+            return geom
+
+    def getSelectedParts(self, geometry):
+        geometries = []
+        if geometry.isMultipart():
+            multi_geometry = geometry.asMultiPolygon()
+            for single_geom in multi_geometry:
+                single_geom_wpsg4326 = self.transformToWgs84(QgsGeometry.fromPolygonXY(single_geom))
+                geometries.append(single_geom_wpsg4326)
+        else:
+            single_geom_wpsg4326 = self.transformToWgs84(geometry)
+            geometries.append(single_geom_wpsg4326)
+        return geometries
+
     def createPolygons(self):
         self.polygons_to_process = []
         self.polygons_to_register = []
@@ -149,13 +171,15 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             return
         for feature in features:
             geom = feature.geometry()
-            geom_wkt = geom.asWkt()
-            polygon = {"layer": layer_source, "fid": feature.id(), "geometry": geom_wkt}
-            polid = self.polygonIsRegistered(geom)
-            if polid is not None:
-                self.polygons_to_process.append(str(polid))
-            else:
-                self.polygons_to_register.append(polygon)
+            geometries = self.getSelectedParts(geom)
+            for single_geometry in geometries:
+                geom_wkt = single_geometry.asWkt()
+                polygon = {"layer": layer_source, "fid": feature.id(), "geometry": geom_wkt}
+                polid = self.polygonIsRegistered(single_geometry)
+                if polid is not None:
+                    self.polygons_to_process.append(str(polid))
+                else:
+                    self.polygons_to_register.append(polygon)
 
         if len(self.polygons_to_register) > 0:
             self.createPolygon()
