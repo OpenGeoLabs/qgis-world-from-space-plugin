@@ -274,7 +274,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             self.requests.append(response_json["id"])
             # print("RESPONSE")
             # print(self.requests)
-            time.sleep(2)
+            time.sleep(30)
             # TODO when the sleep is not sufficient
             self.getProcessingRequestInfo(response_json["id"])
         else:
