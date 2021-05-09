@@ -180,8 +180,8 @@ class WorldFromSpace:
         self.checkRequests.start()
 
     def onProgressStatusChanged(self, response):
-        print("onProgressStatusChanged")
-        print(response.data)
+        # print("onProgressStatusChanged")
+        # print(response.data)
         if self.dockWidget is not None:
             self.dockWidget.onProgressStatusChanged(response.data)
 
@@ -202,7 +202,11 @@ class WorldFromSpace:
         """Removes the plugin menu item and icon from QGIS GUI."""
         if self.dockWidget is not None:
             self.dockWidget.setVisible(False)
-            
+
+        # TODO maybe wait until the thread stops
+        if self.checkRequests is not None:
+            self.checkRequests.stopMe()
+
         for action in self.actions:
             self.iface.removePluginMenu(
                 self.tr(u'&DynaCrop'),

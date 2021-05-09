@@ -25,6 +25,7 @@ class CheckRequests(QThread):
         self.url_polygons = 'https://api-dynacrop.worldfromspace.cz/api/v2/polygons'
         self.url_processing_request = 'https://api-dynacrop.worldfromspace.cz/api/v2/processing_request'
         self.threadPool = []
+        self.stop = False
 
     def loadSettings(self):
         if os.path.exists(self.settingsPath + "/settings.json"):
@@ -44,8 +45,11 @@ class CheckRequests(QThread):
         with open(file) as f:
             return f.read()
 
+    def stopMe(self):
+        self.stop = True
+
     def run(self):
-        while True:
+        while True and not self.stop:
             try:
                 self.threadPool = []
                 self.request = None
