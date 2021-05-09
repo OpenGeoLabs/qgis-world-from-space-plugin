@@ -63,11 +63,12 @@ class WorldFromSpace:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&WorldFromSpace')
+        self.menu = self.tr(u'&DynaCrop')
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
         self.first_start = None
+        self.dockWidget = None
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -82,7 +83,7 @@ class WorldFromSpace:
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('WorldFromSpace', message)
+        return QCoreApplication.translate('DynaCrop', message)
 
 
     def add_action(
@@ -161,12 +162,12 @@ class WorldFromSpace:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-        
+
         icon_path = os.path.join(
             os.path.dirname(__file__), 'icon.png')
         self.add_action(
             icon_path,
-            text=self.tr(u'Show World from Space widget'),
+            text=self.tr(u'Show DynaCrop widget'),
             callback=self.run,
             parent=self.iface.mainWindow())
         # will be set False in run()
@@ -199,9 +200,12 @@ class WorldFromSpace:
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
+        if self.dockWidget is not None:
+            self.dockWidget.setVisible(False)
+            
         for action in self.actions:
             self.iface.removePluginMenu(
-                self.tr(u'&WorldFromSpace'),
+                self.tr(u'&DynaCrop'),
                 action)
             self.iface.removeToolBarIcon(action)
 
