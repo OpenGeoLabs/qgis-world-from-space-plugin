@@ -205,9 +205,11 @@ class WorldFromSpace:
                 action)
             self.iface.removeToolBarIcon(action)
 
-
     def run(self):
         """Run method that performs all the real work"""
-        self.dockWidget = WorldFromSpaceWidget(self.iface, None)
-        self.dockWidget.setMinimumSize(QSize(384, 365))
-        self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockWidget)
+        if self.dockWidget is None:
+            self.dockWidget = WorldFromSpaceWidget(self.iface, None)
+            self.dockWidget.setMinimumSize(QSize(384, 365))
+            self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockWidget)
+        else:
+            self.dockWidget.setVisible(True)
