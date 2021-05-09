@@ -24,12 +24,8 @@
 """
 
 import os
-import webbrowser
 
 from qgis.PyQt import uic
-from qgis.PyQt import QtWidgets
-from qgis.PyQt import QtGui
-from qgis.utils import iface
 from qgis.core import *
 from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtCore import *
@@ -38,7 +34,6 @@ from qgis.gui import *
 
 from .ui_settings import Ui_Settings
 
-import importlib, inspect
 import time
 import json
 
@@ -53,21 +48,29 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
     def __init__(self, iface, parent=None):
         """Constructor."""
         super(WorldFromSpaceWidget, self).__init__(parent)
+
         # TODO put into plugin settings
+        # Paths
         self.url_polygons = 'https://api-dynacrop.worldfromspace.cz/api/v2/polygons'
         self.url_processing_request = 'https://api-dynacrop.worldfromspace.cz/api/v2/processing_request'
         self.iface = iface
         self.pluginPath = os.path.dirname(__file__)
         self.settingsPath = self.pluginPath + "/../../../qgis_world_from_space_settings"
         QDockWidget.__init__(self, None)
+
+        # Dialogs
         self.setupUi(self)
         self.settingsdlg = Ui_Settings(self.pluginPath, self)
+
+        # Buttons
         self.pushButtonSettings.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons/settings.png")))
         self.pushButtonSettings.clicked.connect(self.showSettings)
         self.pushButtonSave.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons/save.png")))
         self.pushButtonSave.clicked.connect(self.saveRasters)
         self.pushButtonGetIndex.clicked.connect(self.createPolygons)
         self.pushButtonCancel.clicked.connect(self.cancelRequest)
+
+        # Global variables
         self.polygons = []
         self.requests = []
         self.loadPolygons()
@@ -84,6 +87,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.number_of_polygons_to_process = 0
 
     def get_form_of_output(self, index):
+        """
+        Returns parameter for API according to the selected items from the list.
+        :param index:
+        :return:
+        """
         if index == 0:
             return "observation"
         if index == 1:
@@ -92,30 +100,56 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             return "time_series"
 
     def loadSettings(self):
+        """
+        Loads the settings from the file.
+        :return:
+        """
         if os.path.exists(self.settingsPath + "/settings.json"):
             with open(self.settingsPath + "/settings.json") as json_file:
                 self.settings = json.load(json_file)
 
     def showSettings(self):
+        """
+        Opens the dialog for the settings.
+        :return:
+        """
+        # First we loads the settings from the file.
         self.settingsdlg.updateSettings()
         self.settingsdlg.show()
 
     def loadIndexesList(self):
+        """
+        Loads list of indexes.
+        :return:
+        """
         indexes = ["NDVI", "EVI", "NDWI", "NDMI", "LAI", "fAPAR", "CWC", "CCC"]
         for index in indexes:
             self.comboBoxIndexes.addItem(index)
 
     def loadTypesList(self):
+        """
+        Loads the list of options in human readable form.
+        :return:
+        """
         types = ["Observation", "Field zonation", "Time series"]
         for type in types:
             self.comboBoxTypes.addItem(type)
 
     def loadPolygons(self):
+        """
+        Loads locally stored polygons from previous sessions.
+        :return:
+        """
         path = self.settingsPath + "/registered_polygons.gpkg|layername=registered_polygons"
         # print(path)
         self.registered_polygons = QgsVectorLayer(path, "Registered polygons", "ogr")
 
     def polygonIsRegistered(self, polygon):
+        """
+        Checks if the polygons is already registerd in the DynaCrop system.
+        :param polygon: input polygon
+        :return: Id if we have its id in local storage None if not.
+        """
         if self.registered_polygons.isValid():
             # print("GETTING REGISTERED")
             provider = self.registered_polygons.dataProvider()
@@ -135,6 +169,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             return None
 
     def transformToWgs84(self, geom):
+        """
+        Transforms geometry into EPSG:4326
+        :param geom:
+        :return:
+        """
         source_crs = self.iface.layerTreeView().selectedLayers()[0].crs().authid()
         if source_crs != "EPSG:4326":
             crs_src = QgsCoordinateReferenceSystem(source_crs)
@@ -145,6 +184,12 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             return geom
 
     def getSelectedParts(self, geometry):
+        """
+        Returns one or more geometries.
+        If the geometry is multigeometry it splits it into list of sigle geometries.
+        :param geometry: geometry to split
+        :return: list of geometries, if the geometry is single then the list has just one item
+        """
         geometries = []
         if geometry.isMultipart():
             multi_geometry = geometry.asMultiPolygon()
@@ -157,10 +202,19 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         return geometries
 
     def savePolygonsJob(self, polid):
+        """
+        Writes polygon check into the queue
+        :param polid: polygon id to check
+        :return:
+        """
         with open(self.settingsPath + "/requests/polygons/" + str(polid), "w") as f:
             f.write(str(polid))
 
     def saveProcessingRequest(self):
+        """
+        Saves request into JSOn to use it from connect thread
+        :return:
+        """
         number_of_zones = 10
         data = {
             "rendering_type": self.get_form_of_output(self.comboBoxTypes.currentIndex()),
@@ -175,11 +229,17 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             json.dump(data, outfile)
 
     def createPolygons(self):
+        """
+        Main function where all starts.
+        :return:
+        """
         self.progressBar.setValue(0)
         self.polygons_to_process = []
         self.polygons_to_register = []
         self.current_polygon_to_register_id = 0
         selectedLayers = self.iface.layerTreeView().selectedLayers()
+
+        # Check if all inputs are ready
         if len(selectedLayers) != 1:
             QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select one layer."))
             return
@@ -191,9 +251,14 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         if len(features) < 1:
             QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select at least one feature."))
             return
+
+        # Saves the request into JSOn for further usage
         self.saveProcessingRequest()
         self.pushButtonGetIndex.setEnabled(False)
+        # Inform user that something happend
         self.progressBar.setValue(5)
+
+        # Loop all selected geometries
         for feature in features:
             geom = feature.geometry()
             geometries = self.getSelectedParts(geom)
@@ -202,21 +267,24 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
                 polygon = {"layer": layer_source, "fid": feature.id(), "geometry": geom_wkt}
                 polid = self.polygonIsRegistered(single_geometry)
                 self.number_of_polygons_to_process += 1
+
+                # If the polygon is not registered we add it into the list and then save into the queue
                 if polid is not None:
                     self.polygons_to_process.append(str(polid))
                     self.savePolygonsJob(polid)
                 else:
+                    # If the polygon is already registered we just save it
                     self.polygons_to_register.append(polygon)
 
         if len(self.polygons_to_register) > 0:
+            # If there are polygons to register we register them
             self.createPolygon()
-            # self.createProcessingRequests()
-
-        # self.getprogressstatus = GetProgressStatus()
-        # self.getprogressstatus.statusChanged.connect(self.onProgressStatusChanged)
-        # self.getprogressstatus.start()
 
     def cancelRequest(self):
+        """
+        Allows to remove all jobs from the queues and returns back to the starting position.
+        :return:
+        """
 
         directory = os.fsencode(self.settingsPath + "/requests/polygons")
         for file in os.listdir(directory):
@@ -232,17 +300,26 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.pushButtonGetIndex.setEnabled(True)
 
     def onProgressStatusChanged(self, count):
-        # print("onProgressStatusChanged")
-        # print(count)
+        """
+        This is slot where jobs thread sends ifnormation about the progress
+        :param count: number of not processed jobs
+        :return:
+        """
+        # If all is done we return to the first state
         if count == 0:
             self.progressBar.setValue(100)
             self.pushButtonGetIndex.setEnabled(True)
         else:
+            # We had used already the 5% so the have just 95% for the rest
             one_request_percent = 95 / self.number_of_polygons_to_process / 2
             self.progressBar.setValue(105 - (one_request_percent * count))
 
 
     def createPolygon(self):
+        """
+        Creates thread that registers the polygon
+        :return:
+        """
         self.createpolygon = Connect()
         self.createpolygon.setType('POST')
         self.createpolygon.setUrl(self.url_polygons)
@@ -260,27 +337,32 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.createpolygon.start()
 
     def onCreatePolygonResponse(self, response):
+        """
+        If the thrtead registers the polygon we move to the other polygon.
+        :param response:
+        :return:
+        """
         if response.status in (200, 201):
-            # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("INFO"), self.tr("Polygon registered"))
-            # print(response.data)
             response_json = json.loads(response.data)
             self.polygons_to_process.append(str(response_json["id"]))
             self.savePolygon(self.current_polygon_to_register_id, response_json["id"])
             self.savePolygonsJob(response_json["id"])
         else:
-            # print("ERROR")
             QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
                                     QApplication.translate("World from Space", "Can not register selected polygons. Check if the polygon in single geometry.", None))
-            # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("ERROR"), self.tr("Polygon can not be registered"))
+
+        # Move to the another polygon if there is any
         self.current_polygon_to_register_id += 1
         if len(self.polygons_to_register) > self.current_polygon_to_register_id:
             self.createPolygon()
-        # else:
-        #     time.sleep(15)
-        #     self.createProcessingRequests()
-        #     # self.pushButtonGetIndex.setEnabled(True)
 
     def savePolygon(self, pos, id):
+        """
+        Saves the polygon into local GPKG file.
+        :param pos: where is the polygon in the list
+        :param id: id of the polygon from DynaCrop database
+        :return:
+        """
         if not self.registered_polygons.isValid():
             QgsMessageLog.logMessage(self.tr("File for storing registered polygons is not available"), "DynaCrop")
         else:
@@ -293,50 +375,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             # provider.addFeatures([fet])
             self.registered_polygons.commitChanges()
 
-    def createProcessingRequests(self):
-        self.requests_to_register = []
-        self.current_request_to_register_id = 0
-        for index in range(len(self.polygons_to_process)):
-            self.requests_to_register.append(self.polygons_to_process[index])
-        if len(self.requests_to_register) > 0:
-            self.createProcessingRequest()
-
-    def createProcessingRequest(self):
-        # self.setCursor(Qt.WaitCursor)
-        self.createprocessingrequest = Connect()
-        self.createprocessingrequest.setType('POST')
-        self.createprocessingrequest.setUrl(self.url_processing_request)
-        self.createprocessingrequest.setData(json.dumps(data))
-        self.createprocessingrequest.statusChanged.connect(self.onCreateProcessingRequestResponse)
-        self.createprocessingrequest.start()
-
-    def onCreateProcessingRequestResponse(self, response):
-        if response.status in (200, 201):
-            # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("INFO"), self.tr("Polygon registered"))
-            # print(response.data)
-            response_json = json.loads(response.data)
-            self.requests.append(response_json["id"])
-            # print("RESPONSE")
-            # print(self.requests)
-            time.sleep(30)
-            # TODO when the sleep is not sufficient
-            self.getProcessingRequestInfo(response_json["id"])
-        else:
-            # print("ERROR")
-            QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
-                                    QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
-            self.requests.append(-1)
-            # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("ERROR"), self.tr("Polygon can not be registered"))
-        self.setCursor(Qt.ArrowCursor)
-
-    def getProcessingRequestInfo(self, id):
-        self.getprocessingrequestinfo = Connect()
-        self.getprocessingrequestinfo.setType('GET')
-        self.getprocessingrequestinfo.setUrl(self.url_processing_request + "/" + str(id) + "?api_key=" + self.settings['apikey'])
-        self.getprocessingrequestinfo.statusChanged.connect(self.onGetProcessingRequestInfoResponse)
-        self.getprocessingrequestinfo.start()
-
     def saveRasters(self):
+        """
+        Saves selected raster layers to the local directory and replaces its original with local.
+        :return:
+        """
         selectedLayers = self.iface.layerTreeView().selectedLayers()
         if len(selectedLayers) < 1:
             QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select at least one layer."))
@@ -357,6 +400,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
                                 QApplication.translate("World from Space", "Selected raster layers were saved localy.", None))
 
     def saveRaster(self, layer):
+        """
+        Saves one raster to he local directory.
+        :param layer:
+        :return:
+        """
         extent = layer.extent()
         width, height = layer.width(), layer.height()
         renderer = layer.renderer()

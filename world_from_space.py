@@ -186,6 +186,10 @@ class WorldFromSpace:
             self.dockWidget.onProgressStatusChanged(response.data)
 
     def checkSettings(self):
+        """
+        Checks if the directories and files for settings and jobs does not exist and creates them.
+        :return:
+        """
         self.pluginPath = os.path.dirname(__file__)
         profilePath = self.pluginPath + "/../../../"
         if not os.path.isdir(profilePath + "qgis_world_from_space_settings"):
@@ -220,4 +224,5 @@ class WorldFromSpace:
             self.dockWidget.setMinimumSize(QSize(384, 365))
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockWidget)
         else:
+            # If the widget is already loaded just show it.
             self.dockWidget.setVisible(True)

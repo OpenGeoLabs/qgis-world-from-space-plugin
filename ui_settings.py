@@ -51,6 +51,10 @@ class Ui_Settings(QtWidgets.QDialog, FORM_CLASS):
         self.settings = {}
 
     def accept(self):
+        """
+        Save settings into the file and close the dialog.
+        :return:
+        """
         self.writeSettings()
         self.close()
 
@@ -71,6 +75,10 @@ class Ui_Settings(QtWidgets.QDialog, FORM_CLASS):
             self.lineEditLayersDirectory.setText(destDir)
 
     def updateSettings(self):
+        """
+        Loads settings from file and populates the dialog items.
+        :return:
+        """
         if os.path.exists(self.settingsPath + "/settings.json"):
             with open(self.settingsPath + "/settings.json") as json_file:
                 self.settings = json.load(json_file)
@@ -80,6 +88,10 @@ class Ui_Settings(QtWidgets.QDialog, FORM_CLASS):
             self.lineEditLayersDirectory.setText(self.pluginPath + "/data")
 
     def writeSettings(self):
+        """
+        Saves values from dialog into the file.
+        :return:
+        """
         self.settings['apikey'] = self.lineEditAPIKey.text()
         self.settings['layers_directory'] = self.lineEditLayersDirectory.text()
         with open(self.settingsPath + "/settings.json", 'w') as outfile:

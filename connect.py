@@ -15,6 +15,9 @@ class Response():
     output = {}
 
 class CheckRequests(QThread):
+    """
+    Thread that runs in infinite loop and checks if there are any requests in the queues to process
+    """
     statusChanged = pyqtSignal(object)
     def __init__(self, path):
         self.settingsPath = path
@@ -22,54 +25,91 @@ class CheckRequests(QThread):
         self.settings = {}
         self.request = None
         self.loadSettings()
+        # Paths
         self.url_polygons = 'https://api-dynacrop.worldfromspace.cz/api/v2/polygons'
         self.url_processing_request = 'https://api-dynacrop.worldfromspace.cz/api/v2/processing_request'
+        # Pool where the threads are stured
         self.threadPool = []
         self.stop = False
 
     def loadSettings(self):
+        """
+        Loads settings from the file
+        :return:
+        """
         if os.path.exists(self.settingsPath + "/settings.json"):
             with open(self.settingsPath + "/settings.json") as json_file:
                 self.settings = json.load(json_file)
 
     def loadProcessingRequest(self):
+        """
+        Loads processing request from the file.
+        :return:
+        """
         if os.path.exists(self.settingsPath + "/requests/request.json"):
             with open(self.settingsPath + "/requests/request.json") as json_file:
                 self.request = json.load(json_file)
 
     def setFileContent(self, file, content):
+        """
+        Writes content into the file
+        :param file:
+        :param content:
+        :return:
+        """
         with open(file, 'w') as f:
             f.write(content)
 
     def getFileContent(self, file):
+        """
+        Reads files content
+        :param file:
+        :return:
+        """
         with open(file) as f:
             return f.read()
 
     def stopMe(self):
+        """
+        indicates that the thread should be stopped. It is used when the plugin is reloaded.
+        :return:
+        """
         self.stop = True
 
     def run(self):
+        """
+        Main infinite loop
+        :return:
+        """
         while True and not self.stop:
             try:
+                # TODO this delete is not probably quite safe
                 self.threadPool = []
                 self.request = None
+                # Reads the processing request JSON
                 self.loadProcessingRequest()
                 if self.request is not None:
+                    # Loops polygons queue
                     directory = os.fsencode(self.settingsPath + "/requests/polygons")
                     for file in os.listdir(directory):
                         filename = os.fsdecode(file)
                         # print(filename)
                         content = self.getFileContent(self.settingsPath + "/requests/polygons/" + filename)
                         # print(content)
+                        # If the file is now taken by another thread we wait until the thread finished it
                         if content != 'CHECKING':
+                            # If the file is new or last check did not get nay result we create new thread to check it
                             simpleGet = Connect()
                             simpleGet.setUrl(self.url_polygons + "/" + filename + "?api_key=" + self.settings['apikey'])
                             simpleGet.setType("GET")
                             simpleGet.statusChanged.connect(self.onPolygonResponse)
+                            # We indicate for another thread that this one is taken writing CHECKING string into the file
                             self.setFileContent(self.settingsPath + "/requests/polygons/" + filename, 'CHECKING')
                             simpleGet.start()
                             self.threadPool.append(simpleGet)
                     directory = os.fsencode(self.settingsPath + "/requests/jobs")
+                    # loop for processing jobs, works similar as polygon loop
+                    # TODO we may probably simplify this code (DRY)
                     for file in os.listdir(directory):
                         filename = os.fsdecode(file)
                         # print(filename)
@@ -90,20 +130,35 @@ class CheckRequests(QThread):
             self.sleep(10)
 
     def onPolygonResponse(self, response):
+        """
+        It is called when the thread of checking polygon status is finished.
+        :param response:
+        :return:
+        """
+        # If the checking thread for polygons is finished we look inside the response
         if response.status in (200, 201):
             data = response.data.read().decode('utf-8')
             response_json = json.loads(data)
+            # If the polygon is completed
             if response_json["status"] == "completed":
+                # We remove the polygon from the queue
                 if os.path.exists(self.settingsPath + "/requests/polygons/" + str(response_json["id"])):
                     os.remove(self.settingsPath + "/requests/polygons/" + str(response_json["id"]))
                 # print("CREATE REQUEST:" + str(response_json["id"]))
+                # We create new processing request for this polygons that is ready
                 self.createProcessingRequest(response_json["id"])
             else:
+                # if the polygon is not completed we change indicator in the job file to say check it again (CREATED status)
                 self.setFileContent(self.settingsPath + "/requests/polygons/" + str(response_json["id"]), 'CREATED')
         else:
             QgsMessageLog.logMessage(self.tr("ERROR reading registered polygon information"), "DynaCrop")
 
     def checkCountOfTheRequests(self):
+        """
+        Checks the number of jobas that are still in the queue
+        It emits the signal for main class that subsequently informs the widget
+        :return:
+        """
         currentCount = 0
         directory = os.fsencode(self.settingsPath + "/requests/polygons")
         for file in os.listdir(directory):
@@ -116,9 +171,17 @@ class CheckRequests(QThread):
         self.statusChanged.emit(responseToReturn)
 
     def onGetProcessingRequestInfoResponse(self, response):
+        """
+        It is called when check of the processing request is finished.
+        :param response:
+        :return:
+        """
+
+        # TODO remove Message boxes from here and put hem into widget
         if response.status in (200, 201):
             data = response.data.read().decode('utf-8')
             response_json = json.loads(data)
+            # If the processing request is completed we do the jobas such as load rastre file or sho wgraph
             if response_json["status"] == "completed":
                 if os.path.exists(self.settingsPath + "/requests/jobs/" + str(response_json["id"])):
                     os.remove(self.settingsPath + "/requests/jobs/" + str(response_json["id"]))
@@ -129,6 +192,7 @@ class CheckRequests(QThread):
                         # url = "type=xyz&url=" + response_json["result"]["tiles_color"]
                         layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"]) + "__" + str(response_json["date_from"]) + "_" + str(response_json["date_to"])
                         # layer = QgsRasterLayer(url, layer_name, 'wms')
+                        # Reads raster output directly from the URL
                         url = "/vsicurl/" + response_json["result"]["raw"]
                         layer = QgsRasterLayer(url, layer_name, 'gdal')
                         provider = layer.dataProvider()
@@ -136,6 +200,7 @@ class CheckRequests(QThread):
                         provider.setUserNoDataValue(1, [QgsRasterRange(-998,-998)])
                         provider.histogram(1)
                         extent = layer.extent()
+                        # Sets the renderer parametesr tho have the raster nice
                         ver = provider.hasStatistics(1, QgsRasterBandStats.All)
                         stats = provider.bandStatistics(1, QgsRasterBandStats.All,extent, 0)
                         renderer = QgsSingleBandGrayRenderer(layer.dataProvider(), 1)
@@ -152,14 +217,21 @@ class CheckRequests(QThread):
 
                                                 QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
             else:
+                # if the processing request is not completed we change its status bakc to CREATED in the queue to chekc it next time again
                 self.setFileContent(self.settingsPath + "/requests/jobs/" + str(response_json["id"]), 'CREATED')
         else:
             QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
                                     QApplication.translate("World from Space", "Some error occured during getting information about request status.", None))
 
+        # When this s finished we want ot inform widget to update progress bar
         self.checkCountOfTheRequests()
 
     def showGraph(self, response_json):
+        """
+        Shows the graph according to the data in the JSON
+        :param response_json:
+        :return:
+        """
         if response_json["status"] == "completed" and response_json["result"]["time_series"] is not None:
             if response_json["result"]["time_series"]["dates"] is not None and len(response_json["result"]["time_series"]["dates"]) > 0:
                 import matplotlib.pyplot as plt
@@ -181,7 +253,13 @@ class CheckRequests(QThread):
                     plt.show()
 
     def createProcessingRequest(self, polid):
-        # self.setCursor(Qt.WaitCursor)
+        """
+        Creates the processing request based on the JSON and polygonid form the system.
+        :param polid:
+        :return:
+        """
+        # We change the polygon id (there is 0 in the originaly stored file just as placeholder.
+        # TODO maybe remove polygon:id form the stored JSON file
         self.request["polygon_id"] = polid
         createprocessingrequest = Connect()
         createprocessingrequest.setType('POST')
@@ -192,6 +270,11 @@ class CheckRequests(QThread):
         self.threadPool.append(createprocessingrequest)
 
     def onCreateProcessingRequestResponse(self, response):
+        """
+        It is called when the processing request is created.
+        :param response:
+        :return:
+        """
         if response.status in (200, 201):
             response_json = json.loads(response.data)
             # print("onCreateProcessingRequestResponse" + str(response_json["id"]))
@@ -201,10 +284,18 @@ class CheckRequests(QThread):
                                     QApplication.translate("World from Space", "Creating reuest failed", None))
 
     def saveRequestJob(self, requestid):
+        """
+        Writes the processing request id into the queue
+        :param requestid:
+        :return:
+        """
         with open(self.settingsPath + "/requests/jobs/" + str(requestid), "w") as f:
             f.write(str(requestid))
 
 class Connect(QThread):
+    """
+    Basic thread for calling POST or GET requests.
+    """
     statusChanged = pyqtSignal(object)
     url = None
     timeout = 5
