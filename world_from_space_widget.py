@@ -40,6 +40,7 @@ from .ui_settings import Ui_Settings
 
 import importlib, inspect
 import time
+import json
 
 from .connect import *
 
@@ -79,6 +80,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.current_polygon_to_register_id = 0
         self.requests_to_register = []
         self.current_request_to_register_id = 0
+        self.number_of_polygons_to_process = 0
 
     def get_form_of_output(self, index):
         if index == 0:
@@ -153,6 +155,24 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             geometries.append(single_geom_wpsg4326)
         return geometries
 
+    def savePolygonsJob(self, polid):
+        with open(self.settingsPath + "/requests/polygons/" + str(polid), "w") as f:
+            f.write(str(polid))
+
+    def saveProcessingRequest(self):
+        number_of_zones = 10
+        data = {
+            "rendering_type": self.get_form_of_output(self.comboBoxTypes.currentIndex()),
+            "polygon_id": 0,
+            "date_from": self.mDateTimeEditStart.dateTime().toString("yyyy-MM-dd"),
+            "date_to": self.mDateTimeEditEnd.dateTime().toString("yyyy-MM-dd"),
+            "layer": self.comboBoxIndexes.currentText(),
+            "number_of_zones": number_of_zones,
+            "api_key": self.settings['apikey']
+        }
+        with open(self.settingsPath + "/requests/request.json", "w") as outfile:
+            json.dump(data, outfile)
+
     def createPolygons(self):
         self.progressBar.setValue(0)
         self.polygons_to_process = []
@@ -170,8 +190,9 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         if len(features) < 1:
             QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select at least one feature."))
             return
-        self.progressBar.setValue(5)
+        self.saveProcessingRequest()
         self.pushButtonGetIndex.setEnabled(False)
+        self.progressBar.setValue(5)
         for feature in features:
             geom = feature.geometry()
             geometries = self.getSelectedParts(geom)
@@ -179,16 +200,31 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
                 geom_wkt = single_geometry.asWkt()
                 polygon = {"layer": layer_source, "fid": feature.id(), "geometry": geom_wkt}
                 polid = self.polygonIsRegistered(single_geometry)
+                self.number_of_polygons_to_process += 1
                 if polid is not None:
                     self.polygons_to_process.append(str(polid))
+                    self.savePolygonsJob(polid)
                 else:
                     self.polygons_to_register.append(polygon)
 
         if len(self.polygons_to_register) > 0:
             self.createPolygon()
+            # self.createProcessingRequests()
+
+        # self.getprogressstatus = GetProgressStatus()
+        # self.getprogressstatus.statusChanged.connect(self.onProgressStatusChanged)
+        # self.getprogressstatus.start()
+
+    def onProgressStatusChanged(self, count):
+        print("onProgressStatusChanged")
+        print(count)
+        if count == 0:
+            self.progressBar.setValue(100)
+            self.pushButtonGetIndex.setEnabled(True)
         else:
-            self.progressBar.setValue(10)
-            self.createProcessingRequests()
+            one_request_percent = 95 / self.number_of_polygons_to_process / 2
+            self.progressBar.setValue(105 - (one_request_percent * count))
+
 
     def createPolygon(self):
         self.createpolygon = Connect()
@@ -214,6 +250,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             response_json = json.loads(response.data)
             self.polygons_to_process.append(str(response_json["id"]))
             self.savePolygon(self.current_polygon_to_register_id, response_json["id"])
+            self.savePolygonsJob(response_json["id"])
         else:
             # print("ERROR")
             QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
@@ -222,10 +259,10 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.current_polygon_to_register_id += 1
         if len(self.polygons_to_register) > self.current_polygon_to_register_id:
             self.createPolygon()
-        else:
-            time.sleep(15)
-            self.createProcessingRequests()
-            # self.pushButtonGetIndex.setEnabled(True)
+        # else:
+        #     time.sleep(15)
+        #     self.createProcessingRequests()
+        #     # self.pushButtonGetIndex.setEnabled(True)
 
     def savePolygon(self, pos, id):
         if not self.registered_polygons.isValid():
@@ -253,15 +290,6 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.createprocessingrequest = Connect()
         self.createprocessingrequest.setType('POST')
         self.createprocessingrequest.setUrl(self.url_processing_request)
-        data = {
-            "rendering_type": self.get_form_of_output(self.comboBoxTypes.currentIndex()),
-            "polygon_id": int(self.requests_to_register[self.current_request_to_register_id]),
-            "date_from": self.mDateTimeEditStart.dateTime().toString("yyyy-MM-dd"),
-            "date_to": self.mDateTimeEditEnd.dateTime().toString("yyyy-MM-dd"),
-            "layer": self.comboBoxIndexes.currentText(),
-            "number_of_zones": 16,
-            "api_key": self.settings['apikey']
-        }
         self.createprocessingrequest.setData(json.dumps(data))
         self.createprocessingrequest.statusChanged.connect(self.onCreateProcessingRequestResponse)
         self.createprocessingrequest.start()
@@ -286,101 +314,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.setCursor(Qt.ArrowCursor)
 
     def getProcessingRequestInfo(self, id):
-        self.setCursor(Qt.WaitCursor)
         self.getprocessingrequestinfo = Connect()
         self.getprocessingrequestinfo.setType('GET')
         self.getprocessingrequestinfo.setUrl(self.url_processing_request + "/" + str(id) + "?api_key=" + self.settings['apikey'])
         self.getprocessingrequestinfo.statusChanged.connect(self.onGetProcessingRequestInfoResponse)
         self.getprocessingrequestinfo.start()
-
-    def onGetProcessingRequestInfoResponse(self, response):
-        if response.status in (200, 201):
-            # QMessageBox.information(self.parent.iface.mainWindow(), self.tr("INFO"), self.tr("Polygon registered"))
-            # print("REQUEST INFO:")
-            # print(response.data)
-            data = response.data.read().decode('utf-8')
-            response_json = json.loads(data)
-            if response_json["rendering_type"] == "time_series":
-                self.showGraph(response_json)
-            else:
-                if response_json["result"]["tiles_color"] is not None:
-                    # url = "type=xyz&url=" + response_json["result"]["tiles_color"]
-                    layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"]) + "__" + str(response_json["date_from"]) + "_" + str(response_json["date_to"])
-                    # layer = QgsRasterLayer(url, layer_name, 'wms')
-                    url = "/vsicurl/" + response_json["result"]["raw"]
-                    layer = QgsRasterLayer(url, layer_name, 'gdal')
-                    provider = layer.dataProvider()
-                    provider.setNoDataValue(1, -999)
-                    provider.setUserNoDataValue(1, [QgsRasterRange(-998,-998)])
-                    provider.histogram(1)
-                    extent = layer.extent()
-                    ver = provider.hasStatistics(1, QgsRasterBandStats.All)
-                    stats = provider.bandStatistics(1, QgsRasterBandStats.All,extent, 0)
-                    renderer = QgsSingleBandGrayRenderer(layer.dataProvider(), 1)
-                    ce = QgsContrastEnhancement(layer.dataProvider().dataType(0))
-                    ce.setContrastEnhancementAlgorithm(QgsContrastEnhancement.StretchToMinimumMaximum)
-                    ce.setMinimumValue(stats.minimumValue)
-                    ce.setMaximumValue(stats.maximumValue)
-                    renderer.setContrastEnhancement(ce)
-                    layer.setRenderer(renderer)
-                    # TODO check if the layer is valid
-                    QgsProject.instance().addMapLayer(layer)
-                else:
-                    # print("ERROR")
-                    QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
-                                            QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
-        else:
-            # print("ERROR")
-            QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
-                                    QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
-
-        self.current_request_to_register_id += 1
-        percent_for_one_process = int(90 / len(self.requests_to_register))
-        self.progressBar.setValue(10 + (percent_for_one_process * self.current_request_to_register_id))
-        if len(self.requests_to_register) > self.current_request_to_register_id:
-            self.createProcessingRequest()
-        else:
-            self.progressBar.setValue(100)
-            self.pushButtonGetIndex.setEnabled(True)
-        # self.setCursor(Qt.ArrowCursor)
-
-    def showGraph(self, response_json):
-        if response_json["status"] == "completed" and response_json["result"]["time_series"] is not None:
-            if response_json["result"]["time_series"]["dates"] is not None and len(response_json["result"]["time_series"]["dates"]) > 0:
-                import matplotlib.pyplot as plt
-                import matplotlib.dates as mdates
-                import datetime as dt
-
-                # "result": {
-                #     "time_series": {
-                #         "dates": [
-                #             "2020-09-14",
-                #             "2020-09-22",
-                #             "2020-09-24"
-                #         ],
-                #         "values": [
-                #             0.2860300894659764,
-                #             0.28543065172559484,
-                #             0.2525505356341188
-                #         ]
-                #     }
-                # },
-
-                # date = [ "2020-09-14", "2020-09-22", "2020-09-24" ]
-                # values = [ 0.2860300894659764, 0.28543065172559484, 0.2525505356341188 ]
-                dates_list = [dt.datetime.strptime(date, '%Y-%m-%d').date() for date in response_json["result"]["time_series"]["dates"]]
-                plt.xticks(rotation=90)
-                plt.title(response_json["layer"])
-                plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-                plt.gca().xaxis.set_major_locator(mdates.DayLocator())
-                plt.plot(dates_list,response_json["result"]["time_series"]["values"],marker='o',label=response_json["polygon"]["id"])
-                plt.legend(loc="upper left")
-                # print(str(len(self.requests_to_register)))
-                # print(str(self.current_request_to_register_id))
-                if len(self.requests_to_register) == (self.current_request_to_register_id + 1):
-                    mng = plt.get_current_fig_manager()
-                    mng.window.showMaximized()
-                    plt.show()
 
     def saveRasters(self):
         selectedLayers = self.iface.layerTreeView().selectedLayers()

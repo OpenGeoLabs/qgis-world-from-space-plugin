@@ -32,6 +32,8 @@ from .world_from_space_widget import WorldFromSpaceWidget
 import os
 from shutil import copy
 
+from .connect import *
+
 class WorldFromSpace:
     """QGIS Plugin Implementation."""
 
@@ -170,6 +172,17 @@ class WorldFromSpace:
         # will be set False in run()
         self.first_start = True
         self.checkSettings()
+        settingsPath = self.pluginPath + "/../../../qgis_world_from_space_settings"
+
+        self.checkRequests = CheckRequests(settingsPath)
+        self.checkRequests.statusChanged.connect(self.onProgressStatusChanged)
+        self.checkRequests.start()
+
+    def onProgressStatusChanged(self, response):
+        print("onProgressStatusChanged")
+        print(response.data)
+        if self.dockWidget is not None:
+            self.dockWidget.onProgressStatusChanged(response.data)
 
     def checkSettings(self):
         self.pluginPath = os.path.dirname(__file__)
@@ -178,6 +191,11 @@ class WorldFromSpace:
             os.mkdir(profilePath + "qgis_world_from_space_settings")
         if not os.path.isfile(profilePath + "qgis_world_from_space_settings/registered_polygons.gpkg"):
             copy(self.pluginPath + "/data/registered_polygons.gpkg", profilePath + "qgis_world_from_space_settings/registered_polygons.gpkg")
+        if not os.path.isdir(profilePath + "qgis_world_from_space_settings/requests/polygons"):
+            os.makedirs(profilePath + "qgis_world_from_space_settings/requests/polygons")
+        if not os.path.isdir(profilePath + "qgis_world_from_space_settings/requests/jobs"):
+            os.makedirs(profilePath + "qgis_world_from_space_settings/requests/jobs")
+
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
