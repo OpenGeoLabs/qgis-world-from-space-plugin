@@ -67,6 +67,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.pushButtonSave.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons/save.png")))
         self.pushButtonSave.clicked.connect(self.saveRasters)
         self.pushButtonGetIndex.clicked.connect(self.createPolygons)
+        self.pushButtonCancel.clicked.connect(self.cancelRequest)
         self.polygons = []
         self.requests = []
         self.loadPolygons()
@@ -215,9 +216,24 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         # self.getprogressstatus.statusChanged.connect(self.onProgressStatusChanged)
         # self.getprogressstatus.start()
 
+    def cancelRequest(self):
+
+        directory = os.fsencode(self.settingsPath + "/requests/polygons")
+        for file in os.listdir(directory):
+            filename = os.fsdecode(file)
+            os.remove(self.settingsPath + "/requests/polygons/" + str(filename))
+
+        directory = os.fsencode(self.settingsPath + "/requests/jobs")
+        for file in os.listdir(directory):
+            filename = os.fsdecode(file)
+            os.remove(self.settingsPath + "/requests/jobs/" + str(filename))
+
+        self.progressBar.setValue(0)
+        self.pushButtonGetIndex.setEnabled(True)
+
     def onProgressStatusChanged(self, count):
-        print("onProgressStatusChanged")
-        print(count)
+        # print("onProgressStatusChanged")
+        # print(count)
         if count == 0:
             self.progressBar.setValue(100)
             self.pushButtonGetIndex.setEnabled(True)
