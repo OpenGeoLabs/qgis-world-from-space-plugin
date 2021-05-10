@@ -122,7 +122,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         Loads list of indexes.
         :return:
         """
-        indexes = ["NDVI", "EVI", "NDWI", "NDMI", "LAI", "fAPAR", "CWC", "CCC"]
+        indexes = ["NDVI", "EVI", "NDWI", "NDMI", "LAI", "fAPAR", "CWC", "CCC","SMI"]
         for index in indexes:
             self.comboBoxIndexes.addItem(index)
 
@@ -330,7 +330,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             "geometry": self.polygons_to_register[self.current_polygon_to_register_id]["geometry"],
             "api_key": self.settings['apikey'],
             "max_mean_cloud_cover": 0.1,
-            "smi_enabled": False
+            "smi_enabled": True
         }
         self.createpolygon.setData(json.dumps(data))
         self.createpolygon.statusChanged.connect(self.onCreatePolygonResponse)
