@@ -248,7 +248,7 @@ class CheckRequests(QThread):
                 plt.legend(loc="upper left")
                 # print(str(len(self.requests_to_register)))
                 # print(str(self.current_request_to_register_id))
-                if self.checkCountOfTheRequests == 0:
+                if self.checkCountOfTheRequests() == 0:
                     mng = plt.get_current_fig_manager()
                     mng.window.showMaximized()
                     plt.show()
