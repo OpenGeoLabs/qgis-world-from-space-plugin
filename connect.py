@@ -242,12 +242,9 @@ class CheckRequests(QThread):
                 dates_list = [dt.datetime.strptime(date, '%Y-%m-%d').date() for date in response_json["result"]["time_series"]["dates"]]
                 plt.xticks(rotation=90)
                 plt.title(response_json["layer"])
-                plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-                plt.gca().xaxis.set_major_locator(mdates.DayLocator())
                 plt.plot(dates_list,response_json["result"]["time_series"]["values"],marker='o',label=response_json["polygon"]["id"])
                 plt.legend(loc="upper left")
-                # print(str(len(self.requests_to_register)))
-                # print(str(self.current_request_to_register_id))
+                print(str(self.checkCountOfTheRequests()))
                 if self.checkCountOfTheRequests() == 0:
                     mng = plt.get_current_fig_manager()
                     mng.window.showMaximized()
