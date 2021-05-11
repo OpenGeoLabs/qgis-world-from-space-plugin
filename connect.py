@@ -244,7 +244,7 @@ class CheckRequests(QThread):
                 plt.title(response_json["layer"])
                 plt.plot(dates_list,response_json["result"]["time_series"]["values"],marker='o',label=response_json["polygon"]["id"])
                 plt.legend(loc="upper left")
-                print(str(self.checkCountOfTheRequests()))
+                # print(str(self.checkCountOfTheRequests()))
                 if self.checkCountOfTheRequests() == 0:
                     mng = plt.get_current_fig_manager()
                     mng.window.showMaximized()
