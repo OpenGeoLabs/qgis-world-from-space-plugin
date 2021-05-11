@@ -263,7 +263,8 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             geom = feature.geometry()
             geometries = self.getSelectedParts(geom)
             for single_geometry in geometries:
-                geom_wkt = single_geometry.asWkt()
+                stripped_z = QgsGeometry.fromPolygonXY(single_geometry.asPolygon())
+                geom_wkt = stripped_z.asWkt()
                 polygon = {"layer": layer_source, "fid": feature.id(), "geometry": geom_wkt}
                 polid = self.polygonIsRegistered(single_geometry)
                 self.number_of_polygons_to_process += 1
