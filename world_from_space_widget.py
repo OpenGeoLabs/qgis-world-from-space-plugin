@@ -179,7 +179,8 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             crs_src = QgsCoordinateReferenceSystem(source_crs)
             crs_dest = QgsCoordinateReferenceSystem(4326)
             xform = QgsCoordinateTransform(crs_src, crs_dest, QgsProject.instance())
-            return xform.transform(geom)
+            geom.transform(xform)
+            return geom
         else:
             return geom
 
