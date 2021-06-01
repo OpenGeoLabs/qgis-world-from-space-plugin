@@ -259,6 +259,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         # Inform user that something happend
         self.progressBar.setValue(5)
 
+        # Check if the index is SMI
+        smi_enabled = False
+        if self.comboBoxIndexes.currentText() == 'SMI':
+            smi_enabled = True
+
         # Loop all selected geometries
         for feature in features:
             geom = feature.geometry()
@@ -266,16 +271,16 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             for single_geometry in geometries:
                 stripped_z = QgsGeometry.fromPolygonXY(single_geometry.asPolygon())
                 geom_wkt = stripped_z.asWkt()
-                polygon = {"layer": layer_source, "fid": feature.id(), "geometry": geom_wkt}
+                polygon = {"layer": layer_source, "fid": feature.id(), "geometry": geom_wkt, "smi_enabled": smi_enabled}
                 polid = self.polygonIsRegistered(single_geometry)
                 self.number_of_polygons_to_process += 1
 
-                # If the polygon is not registered we add it into the list and then save into the queue
+                # If the polygon is already registered we just save it
                 if polid is not None:
                     self.polygons_to_process.append(str(polid))
                     self.savePolygonsJob(polid)
                 else:
-                    # If the polygon is already registered we just save it
+                    # If the polygon is not registered we add it into the list and then save into the queue
                     self.polygons_to_register.append(polygon)
 
         if len(self.polygons_to_register) > 0:
@@ -328,11 +333,12 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         # "POLYGON((16.609153599499933 49.20045317863389,16.61297306513714 49.199219336662225,16.61524757838177 49.19759286157719,16.616577954053156 49.195910244858794,16.61400303339886 49.195265226606885,16.6094540069096 49.197368515988586,16.608381123303644 49.19863044668781,16.609153599499933 49.20045317863389))"
         # "POLYGON ((16.56518693093434536 49.22676219888379023, 16.56425126852759178 49.22444226880676865, 16.56539200762623665 49.22282728985813094, 16.56810927379379095 49.22272475151218174, 16.5683784369518996 49.22462171091217442, 16.56854506176405906 49.22571118083784825, 16.56828871589919672 49.22681346805676128, 16.56767348582352284 49.2272620733202686, 16.56518693093434536 49.22676219888379023))"
         # print(self.polygons_to_register[self.current_polygon_to_register_id]["geometry"])
+
         data = {
             "geometry": self.polygons_to_register[self.current_polygon_to_register_id]["geometry"],
             "api_key": self.settings['apikey'],
             "max_mean_cloud_cover": 0.1,
-            "smi_enabled": True
+            "smi_enabled": self.polygons_to_register[self.current_polygon_to_register_id]["smi_enabled"]
         }
         self.createpolygon.setData(json.dumps(data))
         self.createpolygon.statusChanged.connect(self.onCreatePolygonResponse)
