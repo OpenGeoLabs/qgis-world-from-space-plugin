@@ -124,7 +124,7 @@ class CheckRequests(QThread):
                             getprocessingrequestinfo.start()
                             self.threadPool.append(getprocessingrequestinfo)
 
-            except Error as e:
+            except Exception as e:
                 QgsMessageLog.logMessage(self.tr("ERROR reading thread pool"), "DynaCrop")
 
             self.sleep(10)
