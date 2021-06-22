@@ -81,10 +81,9 @@ class CheckRequests(QThread):
         Main infinite loop
         :return:
         """
+        self.threadPool = []
         while True and not self.stop:
             try:
-                # TODO this delete is not probably quite safe
-                self.threadPool = []
                 self.request = None
                 # Reads the processing request JSON
                 self.loadProcessingRequest()
@@ -126,8 +125,9 @@ class CheckRequests(QThread):
 
             except Exception as e:
                 QgsMessageLog.logMessage(self.tr("ERROR reading thread pool"), "DynaCrop")
+                QgsMessageLog.logMessage(e, "DynaCrop")
 
-            self.sleep(10)
+            self.sleep(1)
 
     def onPolygonResponse(self, response):
         """
