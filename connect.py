@@ -87,6 +87,10 @@ class CheckRequests(QThread):
                 self.request = None
                 # Reads the processing request JSON
                 self.loadProcessingRequest()
+
+                if "log_level" in self.settings and self.settings["log_level"] == 'ALL':
+                    QgsMessageLog.logMessage("Checking jobs", "DynaCrop")
+
                 if self.request is not None:
                     # Loops polygons queue
                     directory = os.fsencode(self.settingsPath + "/requests/polygons")
@@ -94,6 +98,8 @@ class CheckRequests(QThread):
                         filename = os.fsdecode(file)
                         # print(filename)
                         content = self.getFileContent(self.settingsPath + "/requests/polygons/" + filename)
+                        if "log_level" in self.settings and self.settings["log_level"] == 'ALL':
+                            QgsMessageLog.logMessage("File " + self.settingsPath + "/requests/polygons/" + filename + ": " + content, "DynaCrop")
                         # print(content)
                         # If the file is now taken by another thread we wait until the thread finished it
                         if content != 'CHECKING':
@@ -113,6 +119,8 @@ class CheckRequests(QThread):
                         filename = os.fsdecode(file)
                         # print(filename)
                         content = self.getFileContent(self.settingsPath + "/requests/jobs/" + filename)
+                        if "log_level" in self.settings and self.settings["log_level"] == 'ALL':
+                            QgsMessageLog.logMessage("File " + self.settingsPath + "/requests/jobs/" + filename + ": " + content, "DynaCrop")
                         # print(content)
                         if content != 'CHECKING':
                             getprocessingrequestinfo = Connect()
@@ -139,6 +147,8 @@ class CheckRequests(QThread):
         if response.status in (200, 201):
             data = response.data.read().decode('utf-8')
             response_json = json.loads(data)
+            if "log_level" in self.settings and self.settings["log_level"] == 'ALL':
+                QgsMessageLog.logMessage("onPolygonResponse " + data, "DynaCrop")
             # If the polygon is completed
             if response_json["status"] == "completed":
                 # We remove the polygon from the queue
@@ -182,6 +192,8 @@ class CheckRequests(QThread):
         if response.status in (200, 201):
             data = response.data.read().decode('utf-8')
             response_json = json.loads(data)
+            if "log_level" in self.settings and self.settings["log_level"] == 'ALL':
+                QgsMessageLog.logMessage("onGetProcessingRequestInfoResponse " + data, "DynaCrop")
             # If the processing request is completed we do the jobas such as load rastre file or sho wgraph
             if response_json["status"] == "completed":
                 if os.path.exists(self.settingsPath + "/requests/jobs/" + str(response_json["id"])):
@@ -215,8 +227,13 @@ class CheckRequests(QThread):
                         QgsProject.instance().addMapLayer(layer)
                     else:
                         QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
-
                                                 QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
+
+            elif response_json["status"] == "no_data":
+                if os.path.exists(self.settingsPath + "/requests/jobs/" + str(response_json["id"])):
+                    os.remove(self.settingsPath + "/requests/jobs/" + str(response_json["id"]))
+                QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
+                                        QApplication.translate("World from Space", "The response does not contain valid data to show.", None))
             else:
                 # if the processing request is not completed we change its status bakc to CREATED in the queue to chekc it next time again
                 self.setFileContent(self.settingsPath + "/requests/jobs/" + str(response_json["id"]), 'CREATED')
@@ -274,6 +291,8 @@ class CheckRequests(QThread):
         :return:
         """
         if response.status in (200, 201):
+            if "log_level" in self.settings and self.settings["log_level"] == 'ALL':
+                QgsMessageLog.logMessage("onCreateProcessingRequestResponse " + response.data, "DynaCrop")
             response_json = json.loads(response.data)
             # print("onCreateProcessingRequestResponse" + str(response_json["id"]))
             self.saveRequestJob(response_json["id"])
@@ -345,5 +364,6 @@ class Connect(QThread):
             responseToReturn.status = 500
             responseToReturn.data = ""
             QgsMessageLog.logMessage(self.tr("Other URL Error: ") + str(self.url), "DynaCrop")
+            QgsMessageLog.logMessage(e, "DynaCrop")
 
         self.statusChanged.emit(responseToReturn)

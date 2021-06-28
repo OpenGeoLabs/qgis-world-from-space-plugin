@@ -84,6 +84,9 @@ class Ui_Settings(QtWidgets.QDialog, FORM_CLASS):
                 self.settings = json.load(json_file)
                 self.lineEditAPIKey.setText(self.settings['apikey'])
                 self.lineEditLayersDirectory.setText(self.settings['layers_directory'])
+                if "log_level" in self.settings:
+                    if self.settings["log_level"] == 'ALL':
+                        self.comboBoxLogLevel.setCurrentIndex(1)
         else:
             self.lineEditLayersDirectory.setText(self.pluginPath + "/data")
 
@@ -94,6 +97,7 @@ class Ui_Settings(QtWidgets.QDialog, FORM_CLASS):
         """
         self.settings['apikey'] = self.lineEditAPIKey.text()
         self.settings['layers_directory'] = self.lineEditLayersDirectory.text()
+        self.settings['log_level'] = self.comboBoxLogLevel.currentText()
         with open(self.settingsPath + "/settings.json", 'w') as outfile:
             json.dump(self.settings, outfile)
         self.parent.loadSettings()

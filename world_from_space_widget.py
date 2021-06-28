@@ -352,6 +352,8 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         """
         if response.status in (200, 201):
             response_json = json.loads(response.data)
+            if "log_level" in self.settings and self.settings["log_level"] == 'ALL':
+                QgsMessageLog.logMessage("onCreatePolygonResponse " + response_json, "DynaCrop")
             self.polygons_to_process.append(str(response_json["id"]))
             self.savePolygon(self.current_polygon_to_register_id, response_json["id"])
             self.savePolygonsJob(response_json["id"])
