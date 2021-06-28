@@ -90,11 +90,17 @@ class Ui_Settings(QtWidgets.QDialog, FORM_CLASS):
         else:
             self.lineEditLayersDirectory.setText(self.pluginPath + "/data")
 
+    def showRestartInfo(self):
+        QMessageBox.information(None, QApplication.translate("World from Space", "INFO", None),
+                                QApplication.translate("World from Space", "You have to restart QGIS", None))
+
     def writeSettings(self):
         """
         Saves values from dialog into the file.
         :return:
         """
+        if "log_level" not in self.settings or ("log_level" in self.settings and self.settings['log_level'] != self.comboBoxLogLevel.currentText()):
+            self.showRestartInfo()
         self.settings['apikey'] = self.lineEditAPIKey.text()
         self.settings['layers_directory'] = self.lineEditLayersDirectory.text()
         self.settings['log_level'] = self.comboBoxLogLevel.currentText()
