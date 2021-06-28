@@ -4,12 +4,12 @@
 <context>
     <name>CheckRequests</name>
     <message>
-        <location filename="../connect.py" line="88"/>
+        <location filename="../connect.py" line="135"/>
         <source>ERROR reading thread pool</source>
         <translation>ERROR reading thread pool</translation>
     </message>
     <message>
-        <location filename="../connect.py" line="104"/>
+        <location filename="../connect.py" line="164"/>
         <source>ERROR reading registered polygon information</source>
         <translation>ERROR reading registered polygon information</translation>
     </message>
@@ -17,22 +17,22 @@
 <context>
     <name>Connect</name>
     <message>
-        <location filename="../connect.py" line="244"/>
+        <location filename="../connect.py" line="352"/>
         <source>URL Error: </source>
         <translation>URL Error: </translation>
     </message>
     <message>
-        <location filename="../connect.py" line="248"/>
+        <location filename="../connect.py" line="356"/>
         <source>HTTP Error: </source>
         <translation>HTTP Error: </translation>
     </message>
     <message>
-        <location filename="../connect.py" line="252"/>
+        <location filename="../connect.py" line="360"/>
         <source>Socket Error: </source>
         <translation>Socket Error: </translation>
     </message>
     <message>
-        <location filename="../connect.py" line="258"/>
+        <location filename="../connect.py" line="366"/>
         <source>Other URL Error: </source>
         <translation>Other URL Error: </translation>
     </message>
@@ -63,6 +63,21 @@
         <location filename="../settings_base.ui" line="94"/>
         <source>...</source>
         <translation>...</translation>
+    </message>
+    <message>
+        <location filename="../settings_base.ui" line="107"/>
+        <source>Log level</source>
+        <translation>Log level</translation>
+    </message>
+    <message>
+        <location filename="../settings_base.ui" line="121"/>
+        <source>ERROR</source>
+        <translation>ERROR</translation>
+    </message>
+    <message>
+        <location filename="../settings_base.ui" line="126"/>
+        <source>ALL</source>
+        <translation>ALL</translation>
     </message>
 </context>
 <context>
@@ -126,34 +141,44 @@
 <context>
     <name>World from Space</name>
     <message>
-        <location filename="../world_from_space_widget.py" line="356"/>
+        <location filename="../world_from_space_widget.py" line="409"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../world_from_space_widget.py" line="326"/>
+        <location filename="../connect.py" line="235"/>
         <source>The response does not contain valid data to show.</source>
         <translation>The response does not contain valid data to show.</translation>
     </message>
     <message>
-        <location filename="../world_from_space_widget.py" line="272"/>
+        <location filename="../world_from_space_widget.py" line="361"/>
         <source>Can not register selected polygons. Check if the polygon in single geometry.</source>
         <translation>Can not register selected polygons. Check if the polygon in single geometry.</translation>
     </message>
     <message>
-        <location filename="../world_from_space_widget.py" line="356"/>
+        <location filename="../world_from_space_widget.py" line="409"/>
         <source>Selected raster layers were saved localy.</source>
         <translation>Can not register selected polygons. Check if the polygon in single geometry.</translation>
     </message>
     <message>
-        <location filename="../connect.py" line="157"/>
+        <location filename="../connect.py" line="241"/>
         <source>Some error occured during getting information about request status.</source>
         <translation>Some error occured during getting information about request status.</translation>
     </message>
     <message>
-        <location filename="../connect.py" line="200"/>
+        <location filename="../connect.py" line="300"/>
         <source>Creating reuest failed</source>
         <translation>Creating reuest failed</translation>
+    </message>
+    <message>
+        <location filename="../ui_settings.py" line="94"/>
+        <source>INFO</source>
+        <translation>INFO</translation>
+    </message>
+    <message>
+        <location filename="../ui_settings.py" line="94"/>
+        <source>You have to restart QGIS</source>
+        <translation>You have to restart QGIS to change take effect</translation>
     </message>
 </context>
 <context>
@@ -169,7 +194,7 @@
         <translation type="obsolete">Show World from Space widget</translation>
     </message>
     <message>
-        <location filename="../world_from_space.py" line="211"/>
+        <location filename="../world_from_space.py" line="215"/>
         <source>&amp;DynaCrop</source>
         <translation>&amp;DynaCrop</translation>
     </message>
@@ -182,37 +207,37 @@
 <context>
     <name>WorldFromSpaceWidget</name>
     <message>
-        <location filename="../world_from_space_widget.py" line="342"/>
+        <location filename="../world_from_space_widget.py" line="395"/>
         <source>ERROR</source>
         <translation>ERROR</translation>
     </message>
     <message>
-        <location filename="../world_from_space_widget.py" line="184"/>
+        <location filename="../world_from_space_widget.py" line="245"/>
         <source>You have to select one layer.</source>
         <translation>You have to select one layer.</translation>
     </message>
     <message>
-        <location filename="../world_from_space_widget.py" line="192"/>
+        <location filename="../world_from_space_widget.py" line="253"/>
         <source>You have to select at least one feature.</source>
         <translation>You have to select at least one feature.</translation>
     </message>
     <message>
-        <location filename="../world_from_space_widget.py" line="285"/>
+        <location filename="../world_from_space_widget.py" line="377"/>
         <source>File for storing registered polygons is not available</source>
         <translation>File for storing registered polygons is not available.</translation>
     </message>
     <message>
-        <location filename="../world_from_space_widget.py" line="187"/>
+        <location filename="../world_from_space_widget.py" line="248"/>
         <source>You have to select vector layer.</source>
         <translation>You have to select vector layer.</translation>
     </message>
     <message>
-        <location filename="../world_from_space_widget.py" line="342"/>
+        <location filename="../world_from_space_widget.py" line="395"/>
         <source>You have to select at least one layer.</source>
         <translation>You have to select at least one layer.</translation>
     </message>
     <message>
-        <location filename="../world_from_space_widget.py" line="346"/>
+        <location filename="../world_from_space_widget.py" line="399"/>
         <source>Selected layer is not raster. Skipping</source>
         <translation>Selected layer is not raster. Skipping.</translation>
     </message>
