@@ -299,8 +299,19 @@ class CheckRequests(QThread):
             # print("onCreateProcessingRequestResponse" + str(response_json["id"]))
             self.saveRequestJob(response_json["id"])
         else:
-            QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
-                                    QApplication.translate("World from Space", "Creating reuest failed", None))
+            if response.status == 400:
+                try:
+                    response_json = json.loads(response.data)
+                    message = response_json['user']
+                    QMessageBox.information(None, QApplication.translate("World from Space", "Error", None), message)
+                except:
+                    self.generalErrorOnRequest()
+            else:
+                self.generalErrorOnRequest()
+
+    def generalErrorOnRequest(self):
+        QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
+                                            QApplication.translate("World from Space", "Creating reuest failed", None))
 
     def saveRequestJob(self, requestid):
         """
