@@ -264,6 +264,11 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         if self.comboBoxIndexes.currentText() == 'SMI':
             smi_enabled = True
 
+        # Close plot
+        if self.comboBoxTypes.currentIndex() == 2:
+            import matplotlib.pyplot as plt
+            plt.close('all')
+
         # Loop all selected geometries
         for feature in features:
             geom = feature.geometry()

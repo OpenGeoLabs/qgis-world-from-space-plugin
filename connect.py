@@ -256,8 +256,6 @@ class CheckRequests(QThread):
                 import matplotlib.dates as mdates
                 import datetime as dt
 
-                plt.close('all')
-
                 dates_list = [dt.datetime.strptime(date, '%Y-%m-%d').date() for date in response_json["result"]["time_series"]["dates"]]
                 plt.xticks(rotation=90)
                 plt.title(response_json["layer"])
