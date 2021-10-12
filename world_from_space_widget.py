@@ -365,7 +365,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         else:
             # We had used already the 5% so the have just 95% for the rest
             one_request_percent = 95 / self.number_of_polygons_to_process / 2
-            self.progressBar.setValue(105 - (one_request_percent * count))
+            self.progressBar.setValue(int(105 - (one_request_percent * count)))
 
     def createPolygon(self):
         """

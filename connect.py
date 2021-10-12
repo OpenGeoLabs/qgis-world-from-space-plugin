@@ -134,6 +134,8 @@ class CheckRequests(QThread):
             except Exception as e:
                 QgsMessageLog.logMessage(self.tr("ERROR reading thread pool"), "DynaCrop")
                 QgsMessageLog.logMessage(e, "DynaCrop")
+                QMessageBox.information(None, QApplication.translate("World from Space", "Critical Error", None),
+                                        QApplication.translate("World from Space", "The main process has ended with error. You have to restart QGIS.", None))
 
             self.sleep(1)
 
@@ -203,7 +205,10 @@ class CheckRequests(QThread):
                 else:
                     if response_json["result"]["tiles_color"] is not None:
                         # url = "type=xyz&url=" + response_json["result"]["tiles_color"]
-                        layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"]) + "__" + str(response_json["date_from"]) + "_" + str(response_json["date_to"])
+                        type = "obs"
+                        if response_json["rendering_type"] == "field_zonation":
+                            type = "zon"
+                        layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"]) + "_" + type + "__" + str(response_json["date_from"]) + "_" + str(response_json["date_to"])
                         # layer = QgsRasterLayer(url, layer_name, 'wms')
                         # Reads raster output directly from the URL
                         url = "/vsicurl/" + response_json["result"]["raw"]
