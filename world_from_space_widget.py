@@ -86,6 +86,12 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.current_request_to_register_id = 0
         self.number_of_polygons_to_process = 0
 
+        self.setDefaults()
+
+    def setDefaults(self):
+        now = QDateTime.currentDateTime()
+        self.mDateTimeEditStart.setDateTime(now.addDays(-1))
+
     def get_form_of_output(self, index):
         """
         Returns parameter for API according to the selected items from the list.
