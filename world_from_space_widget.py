@@ -294,6 +294,10 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             QMessageBox.information(None, self.tr("ERROR"), self.tr("You have to select at least one feature."))
             return
 
+        if self.mDateTimeEditStart.dateTime() >= self.mDateTimeEditEnd.dateTime():
+            QMessageBox.information(None, self.tr("ERROR"), self.tr("Please enter valid time range."))
+            return
+
         # Saves the request into JSOn for further usage
         self.saveProcessingRequest()
         self.pushButtonGetIndex.setEnabled(False)
