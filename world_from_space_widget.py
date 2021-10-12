@@ -81,7 +81,6 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.polygons = []
         self.requests = []
         self.loadPolygons()
-        self.loadIndexesList()
         self.loadTypesList()
         self.polygons_to_process = []
         self.polygons_to_register = []
@@ -124,6 +123,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         if os.path.exists(self.settingsPath + "/settings.json"):
             with open(self.settingsPath + "/settings.json") as json_file:
                 self.settings = json.load(json_file)
+                self.loadIndexesList()
 
     def showSettings(self):
         """
@@ -158,7 +158,8 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             response_json = json.loads(data)
             if "log_level" in self.settings and self.settings["log_level"] == 'ALL':
                 QgsMessageLog.logMessage("onLoadIndexesResponse " + data, "DynaCrop")
-            indexes = ["NDVI", "EVI", "NDWI", "NDMI", "LAI", "fAPAR", "CWC", "CCC","SMI"]
+            # indexes = ["NDVI", "EVI", "NDWI", "NDMI", "LAI", "fAPAR", "CWC", "CCC","SMI"]
+            self.comboBoxIndexes.clear()
             for index in response_json:
                 self.comboBoxIndexes.addItem(index)
             self.pushButtonGetIndex.setEnabled(True)
