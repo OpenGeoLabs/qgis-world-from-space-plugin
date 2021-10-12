@@ -34,8 +34,7 @@ from qgis.gui import *
 
 from .ui_settings import Ui_Settings
 
-import time
-import json
+import json, webbrowser
 
 from .connect import *
 
@@ -53,6 +52,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         # Paths
         self.url_polygons = 'https://api-dynacrop.worldfromspace.cz/api/v2/polygons'
         self.url_processing_request = 'https://api-dynacrop.worldfromspace.cz/api/v2/processing_request'
+        self.url_layers = 'https://api-dynacrop.worldfromspace.cz/api/v2/available_layers'
         self.iface = iface
         self.pluginPath = os.path.dirname(__file__)
         self.settingsPath = self.pluginPath + "/../../../qgis_world_from_space_settings"
@@ -62,11 +62,18 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.setupUi(self)
         self.settingsdlg = Ui_Settings(self.pluginPath, self)
 
+        # Settings
+        self.settings = {}
+        # print("LOADING SETTINGS")
+        self.loadSettings()
+
         # Buttons
         self.pushButtonSettings.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons/settings.png")))
         self.pushButtonSettings.clicked.connect(self.showSettings)
         self.pushButtonSave.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons/save.png")))
         self.pushButtonSave.clicked.connect(self.saveRasters)
+        self.pushButtonHelp.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons/help.png")))
+        self.pushButtonHelp.clicked.connect(self.showHelp)
         self.pushButtonGetIndex.clicked.connect(self.createPolygons)
         self.pushButtonCancel.clicked.connect(self.cancelRequest)
 
@@ -76,9 +83,6 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.loadPolygons()
         self.loadIndexesList()
         self.loadTypesList()
-        self.settings = {}
-        # print("LOADING SETTINGS")
-        self.loadSettings()
         self.polygons_to_process = []
         self.polygons_to_register = []
         self.current_polygon_to_register_id = 0
@@ -91,6 +95,13 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
     def setDefaults(self):
         now = QDateTime.currentDateTime()
         self.mDateTimeEditStart.setDateTime(now.addDays(-1))
+
+    def showHelp(self):
+        try:
+            webbrowser.get().open(
+                "https://github.com/OpenGeoLabs/qgis-world-from-space-plugin/wiki")
+        except (webbrowser.Error):
+            self.iface.messageBar().pushMessage(QApplication.translate("World from Space", "Error", None), QApplication.translate("World from Space", "Can not find web browser to open help", None), level=Qgis.Critical)
 
     def get_form_of_output(self, index):
         """
@@ -128,9 +139,32 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         Loads list of indexes.
         :return:
         """
-        indexes = ["NDVI", "EVI", "NDWI", "NDMI", "LAI", "fAPAR", "CWC", "CCC","SMI"]
-        for index in indexes:
-            self.comboBoxIndexes.addItem(index)
+        self.getIndexes()
+
+    def getIndexes(self):
+        self.loadindexes = Connect()
+        self.loadindexes.setType('GET')
+        self.loadindexes.setUrl(self.url_layers + "?api_key=" + self.settings['apikey'])
+        self.loadindexes.statusChanged.connect(self.onLoadIndexesResponse)
+        self.loadindexes.start()
+
+    def onLoadIndexesResponse(self, response):
+        """
+        Loads list of indexes.
+        :return:
+        """
+        if response.status in (200, 201):
+            data = response.data.read().decode('utf-8')
+            response_json = json.loads(data)
+            if "log_level" in self.settings and self.settings["log_level"] == 'ALL':
+                QgsMessageLog.logMessage("onLoadIndexesResponse " + data, "DynaCrop")
+            indexes = ["NDVI", "EVI", "NDWI", "NDMI", "LAI", "fAPAR", "CWC", "CCC","SMI"]
+            for index in response_json:
+                self.comboBoxIndexes.addItem(index)
+            self.pushButtonGetIndex.setEnabled(True)
+        else:
+            QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
+                                    QApplication.translate("World from Space", "Can not load layers. Check if you set the API key.", None))
 
     def loadTypesList(self):
         """
@@ -331,7 +365,6 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
             # We had used already the 5% so the have just 95% for the rest
             one_request_percent = 95 / self.number_of_polygons_to_process / 2
             self.progressBar.setValue(105 - (one_request_percent * count))
-
 
     def createPolygon(self):
         """
