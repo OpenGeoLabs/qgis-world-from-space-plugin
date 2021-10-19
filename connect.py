@@ -206,11 +206,14 @@ class CheckRequests(QThread):
                     if response_json["result"]["tiles_color"] is not None:
                         # url = "type=xyz&url=" + response_json["result"]["tiles_color"]
                         type = "obs"
+                        dateinfo = "__" + str(response_json["date_from"]) + "_" + str(response_json["date_to"])
                         if response_json["rendering_type"] == "field_zonation":
                             type = "zon_" + str(response_json["number_of_zones"])
                         if response_json["rendering_type"] == "field_zonation_by_median":
                             type = "zonmed_" + str(response_json["number_of_zones"])
-                        layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"]) + "_" + type + "__" + str(response_json["date_from"]) + "_" + str(response_json["date_to"])
+                        if response_json["rendering_type"] == "observation":
+                            dateinfo = "__" + str(response_json["result"]["metadata"]["observation_date"])
+                        layer_name = response_json["layer"] + "_" + str(response_json["polygon_id"]) + "_" + type + dateinfo
                         # layer = QgsRasterLayer(url, layer_name, 'wms')
                         # Reads raster output directly from the URL
                         url = "/vsicurl/" + response_json["result"]["raw"]
