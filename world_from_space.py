@@ -221,7 +221,7 @@ class WorldFromSpace:
         """Run method that performs all the real work"""
         if self.dockWidget is None:
             self.dockWidget = WorldFromSpaceWidget(self.iface, None)
-            self.dockWidget.setMinimumSize(QSize(384, 365))
+            self.dockWidget.setMinimumSize(QSize(384, 412))
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockWidget)
         else:
             # If the widget is already loaded just show it.
