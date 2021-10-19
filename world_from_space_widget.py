@@ -110,7 +110,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
 
     def setDefaults(self):
         now = QDateTime.currentDateTime()
-        self.mDateTimeEditStart.setDateTime(now.addDays(-1))
+        self.mDateTimeEditStart.setDateTime(now.addMonths(-1))
 
     def showHelp(self):
         try:
