@@ -96,7 +96,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.zones = [3, 5, 10, 20, 255]
         self.zones_labels = ['3', '5', '10', '20', '255']
         self.zones_median = [3, 3, 5, 5, 5, 10, 255]
-        self.zones_median_labels = ['3 zones - low variability', '3 zones', '5 zones - implicit', '5 zones - low variability', '5 zones - high variability', '10 zones', '255 zones']
+        self.zones_median_labels = ['3 zones - low variability', '3 zones', '5 zones - implicit', '5 zones - low variability', '5 zones - high variability', '9 zones', '255 zones']
         self.zones_median_thresholds = [[0.45, 0.55],
                                         [0.4, 0.6],
                                         [0.45, 0.475, 0.525, 0.55],
@@ -334,6 +334,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         self.polygons_to_process = []
         self.polygons_to_register = []
         self.current_polygon_to_register_id = 0
+        self.labelInfo.setText('')
         selectedLayers = self.iface.layerTreeView().selectedLayers()
 
         # Check if all inputs are ready
@@ -363,6 +364,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         smi_enabled = False
         if self.comboBoxIndexes.currentText() == 'SMI':
             smi_enabled = True
+            self.labelInfo.setText('SMI index may take very long to process')
 
         # Close plot
         if self.comboBoxTypes.currentIndex() == 2:
@@ -381,7 +383,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
                 self.number_of_polygons_to_process += 1
 
                 # If the polygon is already registered we just save it
-                if polid is not None:
+                if polid is not None and not smi_enabled:
                     self.polygons_to_process.append(str(polid))
                     self.savePolygonsJob(polid)
                 else:

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>384</width>
-    <height>412</height>
+    <height>439</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -244,6 +244,19 @@
    </property>
    <property name="text">
     <string>Zones:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="labelInfo">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>400</y>
+     <width>301</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
    </property>
   </widget>
  </widget>
