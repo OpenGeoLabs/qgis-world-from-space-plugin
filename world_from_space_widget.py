@@ -115,7 +115,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
     def showHelp(self):
         try:
             webbrowser.get().open(
-                "https://github.com/OpenGeoLabs/qgis-world-from-space-plugin/wiki")
+                "https://docs.dynacrop.space/docs/#/")
         except (webbrowser.Error):
             self.iface.messageBar().pushMessage(QApplication.translate("World from Space", "Error", None), QApplication.translate("World from Space", "Can not find web browser to open help", None), level=Qgis.Critical)
 
