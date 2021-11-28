@@ -10,7 +10,7 @@ version=0.1.10
 author=Jan Ruzicka, Otto Kalab, Katerina Ruzickova
 email=jan.ruzicka.vsb@gmail.com
 
-about=This plugin connect to DynaCrop World From Space API.
+about=This plugin connect to DynaCrop World From Space API. Documentation at https://docs.dynacrop.space/docs/#/
 
 tracker=https://github.com/OpenGeoLabs/qgis-world-from-space-plugin/issues
 repository=https://github.com/OpenGeoLabs/qgis-world-from-space-plugin/
