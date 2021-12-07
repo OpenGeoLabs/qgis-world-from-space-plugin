@@ -6,7 +6,7 @@
 name=Dyna Crop
 qgisMinimumVersion=3.0
 description=This plugin connect to DynaCrop World From Space API.
-version=0.1.12
+version=0.1.10
 author=Jan Ruzicka, Otto Kalab, Katerina Ruzickova
 email=jan.ruzicka.vsb@gmail.com
 
