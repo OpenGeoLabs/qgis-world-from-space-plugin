@@ -106,6 +106,7 @@ class CheckRequests(QThread):
                             # If the file is new or last check did not get nay result we create new thread to check it
                             simpleGet = Connect()
                             simpleGet.setUrl(self.url_polygons + "/" + filename + "?api_key=" + self.settings['apikey'])
+                            # simpleGet.setUrl("http://localhost/wfs/geterror2.php?" + self.settings['apikey'])
                             simpleGet.setType("GET")
                             simpleGet.statusChanged.connect(self.onPolygonResponse)
                             # We indicate for another thread that this one is taken writing CHECKING string into the file
@@ -139,6 +140,14 @@ class CheckRequests(QThread):
 
             self.sleep(1)
 
+    def onPolygonErrorResponse(self):
+        responseToReturn = Response()
+        responseToReturn.data = -1
+        self.statusChanged.emit(responseToReturn)
+        QgsMessageLog.logMessage(self.tr("ERROR reading registered polygon information"), "DynaCrop")
+        QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
+                                    QApplication.translate("World from Space", "ERROR reading registered polygon information. Retry the operation later.", None))
+
     def onPolygonResponse(self, response):
         """
         It is called when the thread of checking polygon status is finished.
@@ -160,10 +169,13 @@ class CheckRequests(QThread):
                 # We create new processing request for this polygons that is ready
                 self.createProcessingRequest(response_json["id"])
             else:
-                # if the polygon is not completed we change indicator in the job file to say check it again (CREATED status)
-                self.setFileContent(self.settingsPath + "/requests/polygons/" + str(response_json["id"]), 'CREATED')
+                if response_json["status"] == "error":
+                    self.onPolygonErrorResponse()
+                else:
+                    # if the polygon is not completed we change indicator in the job file to say check it again (CREATED status)
+                    self.setFileContent(self.settingsPath + "/requests/polygons/" + str(response_json["id"]), 'CREATED')
         else:
-            QgsMessageLog.logMessage(self.tr("ERROR reading registered polygon information"), "DynaCrop")
+            self.onPolygonErrorResponse()
 
     def checkCountOfTheRequests(self):
         """

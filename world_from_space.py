@@ -183,7 +183,10 @@ class WorldFromSpace:
         # print("onProgressStatusChanged")
         # print(response.data)
         if self.dockWidget is not None:
-            self.dockWidget.onProgressStatusChanged(response.data)
+            if response.data == -1:
+                self.dockWidget.cancelRequest()
+            else:
+                self.dockWidget.onProgressStatusChanged(response.data)
 
     def checkSettings(self):
         """

@@ -115,7 +115,7 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
     def showHelp(self):
         try:
             webbrowser.get().open(
-                "https://docs.dynacrop.space/docs/#/")
+                "https://docs.dynacrop.space/docs/#/qgis")
         except (webbrowser.Error):
             self.iface.messageBar().pushMessage(QApplication.translate("World from Space", "Error", None), QApplication.translate("World from Space", "Can not find web browser to open help", None), level=Qgis.Critical)
 
@@ -185,6 +185,14 @@ class WorldFromSpaceWidget(QDockWidget, WIDGET_CLASS):
         else:
             QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
                                     QApplication.translate("World from Space", "Can not load layers. Check if you set the API key.", None))
+            if "log_level" in self.settings and self.settings["log_level"] == 'ALL':
+                QMessageBox.information(None, QApplication.translate("World from Space", "Error", None),
+                                        QApplication.translate("World from Space", "In log ALL level the static list of layers is loaded.", None))
+                indexes = ["NDVI", "EVI", "NDWI", "NDMI", "LAI", "fAPAR", "CWC", "CCC","SMI"]
+                self.comboBoxIndexes.clear()
+                for index in indexes:
+                    self.comboBoxIndexes.addItem(index)
+                self.pushButtonGetIndex.setEnabled(True)
 
     def loadTypesList(self):
         """
